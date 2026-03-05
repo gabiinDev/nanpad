@@ -1,0 +1,68 @@
+---
+description: Buenas prácticas de código NANPAD — tipos, SOLID, tamaño de archivos, JSDoc, linter, formato
+alwaysApply: true
+---
+
+# Buenas prácticas de código — NANPAD
+
+## Tipos (TypeScript)
+
+- **No usar `any`**. Si no se conoce el tipo correcto, usar **`unknown`** y acotar con type guards, assertions o narrowing antes de usar el valor.
+- Habilitar y respetar **TypeScript strict** en el proyecto.
+
+```ts
+// ❌ Evitar
+function parse(data: any) { return data.value; }
+
+// ✅ Preferir
+function parse(data: unknown): string {
+  if (typeof data === 'object' && data !== null && 'value' in data && typeof (data as { value: unknown }).value === 'string')
+    return (data as { value: string }).value;
+  throw new Error('Invalid shape');
+}
+```
+
+## Principios SOLID
+
+- **S**ingle responsibility: una clase/función una responsabilidad.
+- **O**pen/closed: abierto a extensión, cerrado a modificación.
+- **L**iskov substitution: subtipos sustituibles por sus bases.
+- **I**nterface segregation: interfaces pequeñas y específicas.
+- **D**ependency inversion: depender de abstracciones (interfaces), no de implementaciones concretas; inyección de dependencias.
+
+## Duplicidad y estructura
+
+- **Evitar duplicación (DRY)**: extraer lógica repetida a funciones, hooks o módulos compartidos.
+- **Límite de tamaño**: ningún archivo debe superar **300 líneas** de código. Si se acerca o supera, dividir en archivos más pequeños por responsabilidad (componentes, utilidades, tipos, etc.).
+- Estructurar el código en **archivos pequeños y enfocados**; nombres de archivo que reflejen el contenido.
+
+## Documentación JSDoc
+
+- **Siempre** documentar con **JSDoc**:
+  - Módulos públicos y exports relevantes.
+  - Funciones y métodos: `@param`, `@returns`, `@throws` si aplica.
+  - Clases e interfaces: descripción breve.
+  - Tipos y tipos complejos cuando no sean obvios.
+- Mantener JSDoc conciso y útil; evitar comentarios redundantes con el código.
+
+```ts
+/**
+ * Crea una tarea en el workspace actual.
+ * @param input - Datos de la tarea (título obligatorio).
+ * @returns DTO de la tarea creada.
+ * @throws {ValidationError} Si el título está vacío.
+ */
+export function createTask(input: CreateTaskInput): Promise<TaskDTO> { ... }
+```
+
+## Consola y linter
+
+- **Mantener la consola libre de errores y warnings**: no dejar `console.log` de depuración en código entregado; usar un logger configurable si se necesita registro.
+- **Revisar el linter** a medida que se hacen cambios: ejecutar el linter (y, si aplica, el formatter) antes de dar por cerrada una tarea; corregir errores y warnings introducidos.
+- No ignorar reglas del linter sin justificación documentada (ej. comentario `// eslint-disable-next-line` con motivo).
+
+## Formato y codificación de archivos
+
+- **No cambiar el formato ni la codificación** de archivos que no sea necesario modificar para la tarea (ej. no reformatear un archivo entero solo por tocar una línea).
+- Los cambios deben limitarse a lo estrictamente necesario; no alterar saltos de línea, indentación o codificación (UTF-8) del resto del archivo.
+- Si el proyecto define formatter (Prettier, etc.), usarlo solo en el código que se añade o edita, salvo que el usuario pida un formato global.

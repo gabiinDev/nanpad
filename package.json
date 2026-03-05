@@ -1,0 +1,18 @@
+{
+  "name": "nanpad-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --filter @nanpad/app tauri dev",
+    "build": "pnpm --filter @nanpad/core build && pnpm --filter @nanpad/app build",
+    "test": "pnpm -r --parallel test",
+    "test:core": "pnpm --filter @nanpad/core test",
+    "test:app": "pnpm --filter @nanpad/app test",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "pnpm -r --parallel lint",
+    "clean": "pnpm -r exec -- rimraf dist node_modules"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3"
+  }
+}

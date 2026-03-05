@@ -1,0 +1,171 @@
+/* ============================================================
+   NANPAD — paleta shadcn/ui slate (fiel a la referencia)
+   Tipografía: Geist (cuerpo) + JetBrains Mono (código)
+   Tema oscuro por defecto; claro disponible con clase .light
+   ============================================================ */
+
+/* @import debe ir primero, antes de @tailwind */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Tema oscuro por defecto (:root = dark) ─────────────────── */
+:root {
+  /* Superficies — shadcn dark --background / --card / --muted */
+  --color-surface:        oklch(0.129 0.042 264.695);   /* --background */
+  --color-surface-2:      oklch(0.208 0.042 265.755);   /* --card */
+  --color-surface-hover:  oklch(0.279 0.041 260.031);   /* --muted / --secondary */
+  --color-surface-active: oklch(0.279 0.041 260.031);
+
+  /* Bordes */
+  --color-border:        oklch(1 0 0 / 10%);            /* --border dark */
+  --color-border-strong: oklch(1 0 0 / 18%);
+
+  /* Textos */
+  --color-text-primary:   oklch(0.984 0.003 247.858);   /* --foreground dark */
+  --color-text-secondary: oklch(0.704 0.04 256.788);    /* --muted-foreground dark */
+  --color-text-muted:     oklch(0.551 0.027 264.364);   /* --ring dark */
+
+  /* Acento — shadcn dark usa --primary = oklch(0.929 0.013 255.508)
+     que es un gris-blanco slate muy suave, NO azul eléctrico. */
+  --color-accent:        oklch(0.929 0.013 255.508);    /* --primary dark */
+  --color-accent-hover:  oklch(0.984 0.003 247.858);    /* --foreground */
+  --color-accent-subtle: oklch(0.929 0.013 255.508 / 10%);
+
+  /* Prioridades */
+  --color-priority-low:      oklch(0.551 0.027 264.364);
+  --color-priority-medium:   oklch(0.696 0.17 162.48);  /* --chart-2 teal */
+  --color-priority-high:     oklch(0.769 0.188 70.08);  /* --chart-3 ámbar */
+  --color-priority-critical: oklch(0.704 0.191 22.216); /* --destructive dark */
+
+  /* Estados */
+  --color-status-todo:        oklch(0.551 0.027 264.364);
+  --color-status-in-progress: oklch(0.696 0.17 162.48);
+  --color-status-done:        oklch(0.696 0.17 162.48 / 75%);
+  --color-status-archived:    oklch(1 0 0 / 12%);
+
+  /* Sombras */
+  --shadow-sm:  0 1px 3px oklch(0 0 0 / 40%);
+  --shadow-md:  0 4px 14px oklch(0 0 0 / 50%), 0 2px 4px oklch(0 0 0 / 30%);
+  --shadow-lg:  0 8px 28px oklch(0 0 0 / 60%), 0 4px 8px oklch(0 0 0 / 40%);
+  --shadow-xl:  0 20px 50px oklch(0 0 0 / 70%), 0 8px 16px oklch(0 0 0 / 50%);
+  --shadow-glow-accent: 0 0 0 1px oklch(1 0 0 / 8%), 0 4px 20px oklch(0 0 0 / 30%);
+}
+
+/* Alias .dark — hereda :root */
+.dark { /* tema oscuro ya aplicado en :root */ }
+
+/* ── Tema claro — .light ────────────────────────────────────── */
+.light {
+  /* Superficies — shadcn light */
+  --color-surface:        oklch(1 0 0);                  /* --background */
+  --color-surface-2:      oklch(0.984 0.003 247.858);   /* --sidebar */
+  --color-surface-hover:  oklch(0.968 0.007 247.896);   /* --muted */
+  --color-surface-active: oklch(0.929 0.013 255.508);   /* --border */
+
+  /* Bordes */
+  --color-border:        oklch(0.929 0.013 255.508);
+  --color-border-strong: oklch(0.704 0.04 256.788);
+
+  /* Textos */
+  --color-text-primary:   oklch(0.129 0.042 264.695);
+  --color-text-secondary: oklch(0.554 0.046 257.417);
+  --color-text-muted:     oklch(0.704 0.04 256.788);
+
+  /* Acento — shadcn light: --primary = casi negro slate */
+  --color-accent:        oklch(0.208 0.042 265.755);    /* --primary light */
+  --color-accent-hover:  oklch(0.129 0.042 264.695);
+  --color-accent-subtle: oklch(0.968 0.007 247.896);
+
+  /* Prioridades */
+  --color-priority-low:      oklch(0.704 0.04 256.788);
+  --color-priority-medium:   oklch(0.6 0.118 184.704);
+  --color-priority-high:     oklch(0.646 0.222 41.116);
+  --color-priority-critical: oklch(0.577 0.245 27.325);
+
+  /* Estados */
+  --color-status-todo:        oklch(0.704 0.04 256.788);
+  --color-status-in-progress: oklch(0.6 0.118 184.704);
+  --color-status-done:        oklch(0.6 0.118 184.704 / 80%);
+  --color-status-archived:    oklch(0.929 0.013 255.508);
+
+  /* Sombras */
+  --shadow-sm:  0 1px 3px oklch(0 0 0 / 8%);
+  --shadow-md:  0 4px 12px oklch(0 0 0 / 10%), 0 2px 4px oklch(0 0 0 / 6%);
+  --shadow-lg:  0 8px 24px oklch(0 0 0 / 12%), 0 4px 8px oklch(0 0 0 / 8%);
+  --shadow-xl:  0 16px 40px oklch(0 0 0 / 14%), 0 6px 12px oklch(0 0 0 / 9%);
+  --shadow-glow-accent: 0 0 0 1px oklch(0.208 0.042 265.755 / 12%), 0 4px 20px oklch(0.208 0.042 265.755 / 6%);
+}
+
+/* ── Animaciones ─────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-up   { animation: fadeUp   0.20s ease-out both; }
+.animate-scale-in  { animation: scaleIn  0.16s ease-out both; }
+.animate-fade-in   { animation: fadeUp   0.20s ease-out both; }
+.animate-slide-in  { animation: slideIn  0.18s ease-out both; }
+
+/* High Performance Mode — sin animaciones */
+.high-performance * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ── Base ────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: 'Geist', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+.font-mono, code, pre {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.875em;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ── Selección ───────────────────────────────────────────────── */
+::selection {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+input:focus, textarea:focus { outline: none; }
+
+/* ── Transiciones globales para elementos interactivos ───────── */
+button, a, [role="button"] {
+  transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}

@@ -1,0 +1,34 @@
+---
+description: Reglas de oro para el agente en el proyecto NANPAD — versiones, documentación, consultar al usuario
+alwaysApply: true
+---
+
+# Reglas de oro — Agente NANPAD
+
+Estas reglas son **no negociables** cuando trabajas en este proyecto.
+
+## 1. Versiones de dependencias
+
+- **Siempre** intenta usar la **última versión estable** de cada librería o paquete que vayas a añadir o recomendar.
+- Antes de escribir `npm install <paquete>` o equivalente, verifica la versión más reciente (npm, documentación oficial o registry).
+- Si no puedes determinar la última versión estable o hay conflicto entre fuentes, **no inventes una versión**: **solicita explícitamente al usuario** qué versión desea usar o que la indique.
+- En `package.json`, `Cargo.toml` y similares, documenta o fija versiones de forma explícita cuando sea relevante.
+
+## 2. Documentación oficial antes de suponer
+
+- **Nunca** inventes APIs, opciones de configuración o comportamientos que no conozcas con certeza.
+- Antes de resolver algo que no dominas —en especial **errores complejos**, mensajes del compilador o de runtime— **consulta la documentación oficial** (web, MDN, docs del framework/librería).
+- Si hace falta, usa búsqueda web para llegar a la documentación oficial o a issues/guías actualizadas.
+- Si tras consultar la documentación sigues sin tener una respuesta clara, **pregunta al usuario** cómo prefiere proceder en lugar de asumir.
+
+## 3. Dudas e incertidumbre: preguntar al usuario
+
+- Si **no sabes cómo seguir**, si una decisión afecta arquitectura o alcance, o si **tienes dudas** sobre requisitos o prioridades: **detente y consulta al usuario** antes de avanzar.
+- Propón opciones concretas cuando sea posible («puedo hacer A o B; ¿cuál prefieres?») en lugar de avanzar por defecto.
+- No des por hecho preferencias no escritas en la especificación o en las reglas del proyecto.
+
+## Resumen
+
+1. **Versiones**: última estable; si no está clara → pedir versión al usuario.  
+2. **Documentación**: consultar oficial antes de suponer o inventar; más aún en errores complejos.  
+3. **Dudas**: preguntar al usuario antes de continuar; no avanzar a ciegas.

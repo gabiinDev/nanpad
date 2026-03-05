@@ -1,0 +1,36 @@
+---
+description: Convenciones y contexto del proyecto NANPAD — dónde está la especificación y reglas de arquitectura
+alwaysApply: true
+---
+
+# Proyecto NANPAD — Convenciones y contexto
+
+## Documentos de referencia (obligatorios)
+
+Toda la especificación y el plan de implementación están en la carpeta **`.resources`**:
+
+- **`.resources/PLAN-MAESTRO-NANPAD.md`**: plan maestro con funcionalidades detalladas, esquema SQLite, UseCases por módulo, estructura de carpetas, stack y **plan paso a paso por fases** para el agente.
+- **`.resources/especificacion-tecnica-nanpad-1.md`** y **`especificacion-tecnica-nanpad-2.md`**: especificación técnica oficial (arquitectura, módulos, reglas de oro).
+
+Antes de implementar una funcionalidad o un módulo, **revisa** el Plan Maestro y la especificación para alinear decisiones (nombres de tablas, UseCases, estructura de carpetas).
+
+## Reglas de arquitectura (especificación)
+
+- **Module-First**: cada módulo es una mini-aplicación; solo **`application/index.ts`** es público (exporta UseCases y DTOs).
+- **Sin cruce de módulos**: no importar `domain` ni `infrastructure` de un módulo desde otro; comunicación solo por UseCases y DTOs.
+- **Event Bus**: siempre inyectado; nunca singleton global.
+- **Sin singletons globales** para lógica de negocio o estado.
+- **Composition Root** manual (en `main.ts` o equivalente): ahí se instancian Event Bus, repositorios y UseCases.
+- **DTOs** como único contrato entre módulos.
+
+## Cómo proceder con el plan
+
+- El Plan Maestro define **fases (0 a 10)** y pasos numerados. Sigue el orden de fases salvo que el usuario indique otra prioridad.
+- Para cada tarea, identifica la fase y el paso correspondiente y cumple los entregables indicados.
+- Si un paso depende de algo no implementado aún, implementa primero las dependencias o **pregunta al usuario** cómo priorizar.
+
+## Stack (recordatorio)
+
+- **Plataforma**: Tauri 2. **Lenguaje**: TypeScript (strict).
+- **UI**: React 18 + Zustand (recomendado); Monaco, marked, mermaid; Tailwind.
+- **Persistencia**: SQLite local (esquema y tablas en PLAN-MAESTRO-NANPAD.md, sección 2).

@@ -1,0 +1,61 @@
+---
+description: Convenciones de imports con alias de path para NANPAD. Aplica en todos los archivos TypeScript/TSX de ambos paquetes del monorepo.
+globs: **/*.{ts,tsx}
+alwaysApply: true
+---
+
+# Imports — Siempre usar alias de path
+
+Nunca usar rutas relativas con `../` cuando existe un alias configurado. Las rutas relativas con `./` (mismo directorio) son la única excepción permitida.
+
+## Alias disponibles
+
+### `packages/core` (`@nanpad/core`)
+
+| Alias | Resuelve a |
+|-------|-----------|
+| `@shared/*` | `src/shared/*` |
+| `@modules/*` | `src/modules/*` |
+| `@infra/*` | `src/infrastructure/*` |
+
+### `nanpad-app` (`@nanpad/app`)
+
+| Alias | Resuelve a |
+|-------|-----------|
+| `@/*` | `src/*` |
+| `@app/*` | `src/app/*` |
+| `@ui/*` | `src/ui/*` |
+| `@features/*` | `src/features/*` |
+| `@nanpad/core` | `packages/core/src/index.ts` |
+
+## Ejemplos
+
+```ts
+// ❌ Incorrecto — ruta relativa cruzando directorios
+import type { IDatabase } from "../../../../../infrastructure/db/IDatabase.ts";
+import { useApp } from "../../app/AppContext.tsx";
+import type { TaskDTO } from "../../../task/application/dtos/TaskDTO.ts";
+
+// ✅ Correcto — alias
+import type { IDatabase } from "@infra/db/IDatabase.ts";
+import { useApp } from "@app/AppContext.tsx";
+import type { TaskDTO } from "@modules/task/application/dtos/TaskDTO.ts";
+```
+
+```ts
+// ✅ Excepción permitida — mismo directorio
+import { MarkdownPreview } from "./MarkdownPreview.tsx";
+import { categoryToDTO } from "./mappers.ts";
+```
+
+## Regla para imports entre módulos del core
+
+Las referencias cruzadas entre módulos (`task`, `category`, `document`, `history`, `storage`, `mcp`) **siempre** usan `@modules/*`:
+
+```ts
+// ❌ Incorrecto
+import type { TaskDTO } from "../../../task/application/dtos/TaskDTO.ts";
+
+// ✅ Correcto
+import type { TaskDTO } from "@modules/task/application/dtos/TaskDTO.ts";
+```

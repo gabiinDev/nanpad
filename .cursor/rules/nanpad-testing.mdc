@@ -1,0 +1,49 @@
+---
+description: Testing NANPAD — convenciones de nombres, mocks, tests de performance en puntos críticos
+alwaysApply: true
+globs: "**/*.test.{ts,tsx},**/*.spec.{ts,tsx},**/__tests__/**"
+---
+
+# Testing — NANPAD
+
+## Convenciones de nombres
+
+- **Archivos**: mismo nombre que el módulo/componente + sufijo `.test.ts` o `.test.tsx` (ej. `CreateTask.test.ts`, `TaskList.test.tsx`), o colocar tests en carpeta `__tests__/` del módulo.
+- **Describe/it**: usar descripciones que lean como frase: qué unidad se prueba y qué comportamiento se espera.
+  - `describe('CreateTask', () => { ... })` para agrupar por UseCase o componente.
+  - `it('creates a task with title and default status', () => { ... })` para cada caso.
+- **Nombres en español o inglés**: mantener el mismo idioma que el resto del proyecto; ser consistente dentro del mismo archivo de test.
+
+```ts
+describe('ListTasks', () => {
+  it('returns only tasks matching the given category filter', async () => { ... });
+  it('returns empty array when no tasks exist', async () => { ... });
+});
+```
+
+## Uso de mocks
+
+- **Repositorios e infraestructura**: en tests de UseCases, mockear repositorios (TaskRepository, CategoryRepository, etc.) para aislar la lógica de aplicación; usar datos en memoria o implementaciones falsas (fakes) en lugar de SQLite real cuando no se pruebe la persistencia.
+- **Event Bus**: mockear el Event Bus en tests unitarios de UseCases para verificar que se emiten los eventos esperados (e.g. `task.created`, `task.completed`) sin efectos secundarios reales.
+- **Tests de integración**: usar SQLite en disco temporal (o in-memory) cuando se pruebe el flujo completo UseCase + repositorio; no mockear el repositorio en ese caso.
+- Preferir **fakes** (implementación mínima real) sobre mocks cuando el comportamiento sea simple y ayude a detectar contratos rotos.
+
+## Cobertura por capa
+
+- **Por módulo**: tests unitarios que cubran entidades, value objects y UseCases del módulo.
+- **Por UseCase**: tests de integración que ejecuten el UseCase contra el repositorio real (DB temporal) y comprueben estado final y eventos.
+- **Eventos**: tests que verifiquen que al ejecutar una acción se publican los eventos correctos con el payload esperado.
+
+## Tests de performance (obligatorios en puntos fuertes)
+
+Es **importante aplicar tests de performance** en los puntos críticos de la aplicación, tal como indica la especificación. Incluir tests de rendimiento medidos en:
+
+- **Parsing de Markdown**: tiempo y memoria al parsear documentos grandes (p. ej. 100 KB+); detectar regresiones.
+- **Indexación / búsqueda**: tiempo de indexación o de consultas con muchos ítems (miles de tareas/documentos); filtros y ListTasks con datos voluminosos.
+- **Listas grandes**: render o virtualización con muchos elementos (vista lista, Kanban con muchas tareas); medir tiempo de primer render o scroll.
+- **Serialización / export**: tiempo de export completo del workspace (JSON/zip) con datos realistas; import de backups grandes.
+- **Historial**: GetEntityHistory o recorrido de history_entries con muchos registros.
+
+Herramientas sugeridas: **Vitest** con `vi.measure()` o timeouts, o tests dedicados que midan duración y fallen si superan un umbral (ej. "ListTasks con 10.000 tareas debe responder en < 500 ms"). Documentar los umbrales en el test o en un comentario JSDoc.
+
+Los tests de performance deben ser **reproducibles** y ejecutables en CI; si son lentos, marcar con etiqueta (ej. `performance`) para poder ejecutarlos por separado del suite rápido.

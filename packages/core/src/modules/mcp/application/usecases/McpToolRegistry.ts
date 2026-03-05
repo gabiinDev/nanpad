@@ -8,7 +8,7 @@ import type {
   McpToolDescriptor,
   McpToolHandler,
   McpToolEntry,
-} from "../dtos/McpDTO.ts";
+} from "../dtos/McpDTO";
 
 /**
  * Registro inmutable de tools MCP.

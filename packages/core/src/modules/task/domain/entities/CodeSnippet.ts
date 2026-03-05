@@ -4,7 +4,7 @@
  * capturado desde el editor Monaco.
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
+import { generateId, type EntityId } from "@shared/types/id";
 
 export interface CodeSnippetProps {
   id: EntityId;

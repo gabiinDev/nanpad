@@ -4,11 +4,11 @@
  */
 
 // ─── Servidor MCP ─────────────────────────────────────────────────────────────
-export { McpServer } from "./usecases/McpServer.ts";
-export type { McpServerDeps } from "./usecases/McpServer.ts";
+export { McpServer } from "./usecases/McpServer";
+export type { McpServerDeps } from "./usecases/McpServer";
 
 // ─── Registro de tools (útil para extensión o testing) ───────────────────────
-export { McpToolRegistry } from "./usecases/McpToolRegistry.ts";
+export { McpToolRegistry } from "./usecases/McpToolRegistry";
 
 // ─── Tipos del protocolo ─────────────────────────────────────────────────────
 export type {
@@ -19,4 +19,4 @@ export type {
   McpToolEntry,
   McpParamSchema,
   McpParamType,
-} from "./dtos/McpDTO.ts";
+} from "./dtos/McpDTO";

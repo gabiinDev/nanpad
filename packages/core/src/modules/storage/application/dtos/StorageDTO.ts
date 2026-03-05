@@ -14,7 +14,7 @@ import type {
   DocumentRow,
   DocumentContentRow,
   HistoryEntryRow,
-} from "@infra/db/schema.ts";
+} from "@infra/db/schema";
 
 /**
  * Snapshot completo del workspace: todas las tablas serializadas a JSON.

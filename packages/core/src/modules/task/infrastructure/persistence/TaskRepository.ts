@@ -4,11 +4,11 @@
  * Las implementaciones concretas están en sqlite/.
  */
 
-import type { Task } from "../../domain/entities/Task.ts";
-import type { Subtask } from "../../domain/entities/Subtask.ts";
-import type { CodeSnippet } from "../../domain/entities/CodeSnippet.ts";
-import type { TaskFilters } from "../../application/dtos/TaskDTO.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { Task } from "../../domain/entities/Task";
+import type { Subtask } from "../../domain/entities/Subtask";
+import type { CodeSnippet } from "../../domain/entities/CodeSnippet";
+import type { TaskFilters } from "../../application/dtos/TaskDTO";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Contrato del repositorio de tareas.

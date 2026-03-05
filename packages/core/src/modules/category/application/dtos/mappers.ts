@@ -2,8 +2,8 @@
  * Funciones de mapeo entre entidades de dominio y DTOs del módulo Category.
  */
 
-import type { Category } from "../../domain/entities/Category.ts";
-import type { CategoryDTO } from "./CategoryDTO.ts";
+import type { Category } from "../../domain/entities/Category";
+import type { CategoryDTO } from "./CategoryDTO";
 
 /**
  * Convierte una entidad Category a su DTO.

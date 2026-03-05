@@ -4,8 +4,8 @@
  * Las implementaciones concretas están en sqlite/.
  */
 
-import type { Category } from "../../domain/entities/Category.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { Category } from "../../domain/entities/Category";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Filtros para buscar categorías.

@@ -5,9 +5,9 @@
 import type {
   IDocumentRepository,
   DocumentFilters,
-} from "../../../infrastructure/persistence/DocumentRepository.ts";
-import type { Document } from "../../../domain/entities/Document.ts";
-import type { EntityId } from "@shared/types/id.ts";
+} from "../../../infrastructure/persistence/DocumentRepository";
+import type { Document } from "../../../domain/entities/Document";
+import type { EntityId } from "@shared/types/id";
 
 /** Repositorio de documentos en memoria para tests. */
 export class InMemoryDocumentRepository implements IDocumentRepository {

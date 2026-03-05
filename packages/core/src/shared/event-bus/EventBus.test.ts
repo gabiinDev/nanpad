@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { EventBus, createEvent } from "./EventBus.ts";
-import type { AppEvent } from "./types.ts";
+import { EventBus, createEvent } from "./EventBus";
+import type { AppEvent } from "./types";
 
 describe("EventBus", () => {
   let bus: EventBus;
@@ -81,9 +81,9 @@ describe("EventBus", () => {
   });
 
   it("createEvent genera un evento con timestamp ISO", () => {
-    const event: AppEvent = createEvent("test.ts", { key: "val" });
+    const event: AppEvent = createEvent("test", { key: "val" });
 
-    expect(event.type).toBe("test.ts");
+    expect(event.type).toBe("test");
     expect(event.payload).toEqual({ key: "val" });
     expect(new Date(event.timestamp).getTime()).not.toBeNaN();
   });

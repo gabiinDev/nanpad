@@ -15,7 +15,7 @@ import type {
   DocumentRow,
   DocumentContentRow,
   HistoryEntryRow,
-} from "@infra/db/schema.ts";
+} from "@infra/db/schema";
 
 /**
  * Contrato del puerto de almacenamiento.

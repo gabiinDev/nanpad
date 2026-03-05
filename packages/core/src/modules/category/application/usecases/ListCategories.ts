@@ -2,10 +2,10 @@
  * UseCase: Listar categorías con jerarquía opcional.
  */
 
-import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository.ts";
-import type { ListCategoriesInput, CategoryDTO } from "../dtos/CategoryDTO.ts";
-import { categoryToDTO } from "../dtos/mappers.ts";
-import type { Category } from "../../domain/entities/Category.ts";
+import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository";
+import type { ListCategoriesInput, CategoryDTO } from "../dtos/CategoryDTO";
+import { categoryToDTO } from "../dtos/mappers";
+import type { Category } from "../../domain/entities/Category";
 
 /**
  * Lista categorías aplicando filtros opcionales.

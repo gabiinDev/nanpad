@@ -3,7 +3,7 @@
  * Representa una subtarea asociada a una Task principal.
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
+import { generateId, type EntityId } from "@shared/types/id";
 
 export interface SubtaskProps {
   id: EntityId;

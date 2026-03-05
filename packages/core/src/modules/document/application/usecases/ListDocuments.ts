@@ -2,9 +2,9 @@
  * UseCase: Listar documentos (solo metadata, sin contenido Markdown).
  */
 
-import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository.ts";
-import type { ListDocumentsInput, DocumentDTO } from "../dtos/DocumentDTO.ts";
-import { documentToDTO } from "../dtos/mappers.ts";
+import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository";
+import type { ListDocumentsInput, DocumentDTO } from "../dtos/DocumentDTO";
+import { documentToDTO } from "../dtos/mappers";
 
 /**
  * Lista todos los documentos disponibles con filtro opcional por título.

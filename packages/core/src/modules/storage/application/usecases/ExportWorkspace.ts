@@ -3,12 +3,12 @@
  * Lee todas las tablas y las serializa en un único objeto WorkspaceSnapshot.
  */
 
-import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort.ts";
+import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";
 import type {
   ExportWorkspaceInput,
   ExportWorkspaceResult,
   WorkspaceSnapshot,
-} from "../dtos/StorageDTO.ts";
+} from "../dtos/StorageDTO";
 
 /** Versión de la aplicación incluida en cada snapshot. */
 const APP_VERSION = "0.1.0";

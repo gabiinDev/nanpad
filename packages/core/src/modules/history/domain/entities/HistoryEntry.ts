@@ -4,7 +4,7 @@
  * No contiene lógica de negocio más allá de su creación.
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
+import { generateId, type EntityId } from "@shared/types/id";
 
 /** Tipos de acción registrables en el historial. */
 export type HistoryAction =

@@ -2,9 +2,9 @@
  * UseCase: Obtener el historial de cambios de una entidad específica.
  */
 
-import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository.ts";
-import type { GetEntityHistoryInput, HistoryEntryDTO } from "../dtos/HistoryDTO.ts";
-import { historyEntryToDTO } from "../dtos/mappers.ts";
+import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository";
+import type { GetEntityHistoryInput, HistoryEntryDTO } from "../dtos/HistoryDTO";
+import { historyEntryToDTO } from "../dtos/mappers";
 
 /**
  * Recupera el historial de una entidad ordenado cronológicamente.

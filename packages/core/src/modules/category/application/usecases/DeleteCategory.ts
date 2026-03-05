@@ -5,10 +5,10 @@
  * - "reassign": reasigna las tareas a otra categoría.
  */
 
-import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository.ts";
-import type { IEventBus } from "@shared/event-bus/types.ts";
-import { createEvent } from "@shared/event-bus/EventBus.ts";
-import type { DeleteCategoryInput } from "../dtos/CategoryDTO.ts";
+import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository";
+import type { IEventBus } from "@shared/event-bus/types";
+import { createEvent } from "@shared/event-bus/EventBus";
+import type { DeleteCategoryInput } from "../dtos/CategoryDTO";
 
 /**
  * Elimina una categoría de forma segura sin borrado en cascada no controlado.

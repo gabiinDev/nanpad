@@ -11,16 +11,16 @@
  * - Categorizar automáticamente
  */
 
-import type { TaskDTO, TaskFilters, CreateTaskInput, UpdateTaskInput, MoveTaskStatusInput } from "@modules/task/application/dtos/TaskDTO.ts";
-import type { CreateDocumentInput, DocumentDTO, DocumentWithContentDTO, GetDocumentInput, ListDocumentsInput } from "@modules/document/application/dtos/DocumentDTO.ts";
-import type { CategoryDTO, ListCategoriesInput } from "@modules/category/application/dtos/CategoryDTO.ts";
+import type { TaskDTO, TaskFilters, CreateTaskInput, UpdateTaskInput, MoveTaskStatusInput } from "@modules/task/application/dtos/TaskDTO";
+import type { CreateDocumentInput, DocumentDTO, DocumentWithContentDTO, GetDocumentInput, ListDocumentsInput } from "@modules/document/application/dtos/DocumentDTO";
+import type { CategoryDTO, ListCategoriesInput } from "@modules/category/application/dtos/CategoryDTO";
 
-import { McpToolRegistry } from "./McpToolRegistry.ts";
+import { McpToolRegistry } from "./McpToolRegistry";
 import type {
   McpRequest,
   McpResponse,
   McpToolDescriptor,
-} from "../dtos/McpDTO.ts";
+} from "../dtos/McpDTO";
 
 // ─── Interfaces estructurales de los UseCases ─────────────────────────────────
 // Se usan interfaces en lugar de clases concretas para desacoplar tests y fakes.

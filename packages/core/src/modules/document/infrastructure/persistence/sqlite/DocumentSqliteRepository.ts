@@ -4,11 +4,11 @@
  * No importa nada de Tauri — recibe IDatabase por inyección.
  */
 
-import type { IDatabase } from "@infra/db/IDatabase.ts";
-import type { IDocumentRepository, DocumentFilters } from "../DocumentRepository.ts";
-import { Document } from "../../../domain/entities/Document.ts";
-import type { DocumentRow, DocumentContentRow } from "@infra/db/schema.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { IDatabase } from "@infra/db/IDatabase";
+import type { IDocumentRepository, DocumentFilters } from "../DocumentRepository";
+import { Document } from "../../../domain/entities/Document";
+import type { DocumentRow, DocumentContentRow } from "@infra/db/schema";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Repositorio de documentos que opera sobre cualquier implementación de IDatabase.

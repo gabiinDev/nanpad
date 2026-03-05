@@ -5,12 +5,12 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { EventBus } from "@shared/event-bus/EventBus.ts";
-import { CreateCategory } from "../CreateCategory.ts";
-import { UpdateCategory } from "../UpdateCategory.ts";
-import { DeleteCategory } from "../DeleteCategory.ts";
-import { ListCategories } from "../ListCategories.ts";
-import { InMemoryCategoryRepository } from "./fakes.ts";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { CreateCategory } from "../CreateCategory";
+import { UpdateCategory } from "../UpdateCategory";
+import { DeleteCategory } from "../DeleteCategory";
+import { ListCategories } from "../ListCategories";
+import { InMemoryCategoryRepository } from "./fakes";
 
 describe("CreateCategory", () => {
   let repo: InMemoryCategoryRepository;

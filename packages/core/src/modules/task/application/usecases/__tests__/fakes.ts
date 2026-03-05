@@ -3,14 +3,14 @@
  * Implementaciones en memoria de los repositorios e interfaces necesarias.
  */
 
-import type { ITaskRepository } from "../../../infrastructure/persistence/TaskRepository.ts";
-import type { Task } from "../../../domain/entities/Task.ts";
-import type { Subtask } from "../../../domain/entities/Subtask.ts";
-import type { CodeSnippet } from "../../../domain/entities/CodeSnippet.ts";
-import type { TaskFilters } from "../../dtos/TaskDTO.ts";
-import type { EntityId } from "@shared/types/id.ts";
-import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository.ts";
-import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry.ts";
+import type { ITaskRepository } from "../../../infrastructure/persistence/TaskRepository";
+import type { Task } from "../../../domain/entities/Task";
+import type { Subtask } from "../../../domain/entities/Subtask";
+import type { CodeSnippet } from "../../../domain/entities/CodeSnippet";
+import type { TaskFilters } from "../../dtos/TaskDTO";
+import type { EntityId } from "@shared/types/id";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
 
 /** Repositorio de tareas en memoria para tests. */
 export class InMemoryTaskRepository implements ITaskRepository {

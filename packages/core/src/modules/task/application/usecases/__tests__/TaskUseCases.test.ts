@@ -4,18 +4,18 @@
  * AddSubtask, AttachCodeToTask, GetTaskHistory.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { UpdateTask } from "../UpdateTask.ts";
-import { ListTasks } from "../ListTasks.ts";
-import { MoveTaskStatus } from "../MoveTaskStatus.ts";
-import { CompleteTask } from "../CompleteTask.ts";
-import { RestoreTask } from "../RestoreTask.ts";
-import { AddSubtask } from "../AddSubtask.ts";
-import { AttachCodeToTask } from "../AttachCodeToTask.ts";
-import { GetTaskHistory } from "../GetTaskHistory.ts";
-import { CreateTask } from "../CreateTask.ts";
-import { EventBus } from "@shared/event-bus/EventBus.ts";
-import { InMemoryTaskRepository, InMemoryHistoryRepository } from "./fakes.ts";
-import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry.ts";
+import { UpdateTask } from "../UpdateTask";
+import { ListTasks } from "../ListTasks";
+import { MoveTaskStatus } from "../MoveTaskStatus";
+import { CompleteTask } from "../CompleteTask";
+import { RestoreTask } from "../RestoreTask";
+import { AddSubtask } from "../AddSubtask";
+import { AttachCodeToTask } from "../AttachCodeToTask";
+import { GetTaskHistory } from "../GetTaskHistory";
+import { CreateTask } from "../CreateTask";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { InMemoryTaskRepository, InMemoryHistoryRepository } from "./fakes";
+import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
 
 describe("UpdateTask", () => {
   let repo: InMemoryTaskRepository;
@@ -218,7 +218,7 @@ describe("AttachCodeToTask", () => {
       taskId: task.id,
       content: "const x = 1;",
       language: "typescript",
-      filePath: "src/index.ts",
+      filePath: "src/index",
       lineStart: 10,
       lineEnd: 10,
     });

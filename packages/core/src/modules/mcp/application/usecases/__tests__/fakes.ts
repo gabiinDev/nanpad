@@ -3,9 +3,9 @@
  * Cada fake registra las llamadas recibidas y retorna datos predefinidos.
  */
 
-import type { TaskDTO } from "@modules/task/application/dtos/TaskDTO.ts";
-import type { CategoryDTO } from "@modules/category/application/dtos/CategoryDTO.ts";
-import type { DocumentDTO, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO.ts";
+import type { TaskDTO } from "@modules/task/application/dtos/TaskDTO";
+import type { CategoryDTO } from "@modules/category/application/dtos/CategoryDTO";
+import type { DocumentDTO, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO";
 import type {
   McpServerDeps,
   ICreateTask,
@@ -17,7 +17,7 @@ import type {
   IGetDocument,
   IListDocuments,
   IListCategories,
-} from "../McpServer.ts";
+} from "../McpServer";
 
 // ─── TaskDTO mínimo ───────────────────────────────────────────────────────────
 

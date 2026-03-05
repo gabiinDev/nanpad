@@ -3,13 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { EventBus } from "@shared/event-bus/EventBus.ts";
-import { CreateDocument } from "../CreateDocument.ts";
-import { UpdateDocument } from "../UpdateDocument.ts";
-import { GetDocument } from "../GetDocument.ts";
-import { ListDocuments } from "../ListDocuments.ts";
-import { DeleteDocument } from "../DeleteDocument.ts";
-import { InMemoryDocumentRepository } from "./fakes.ts";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { CreateDocument } from "../CreateDocument";
+import { UpdateDocument } from "../UpdateDocument";
+import { GetDocument } from "../GetDocument";
+import { ListDocuments } from "../ListDocuments";
+import { DeleteDocument } from "../DeleteDocument";
+import { InMemoryDocumentRepository } from "./fakes";
 
 describe("CreateDocument", () => {
   let repo: InMemoryDocumentRepository;

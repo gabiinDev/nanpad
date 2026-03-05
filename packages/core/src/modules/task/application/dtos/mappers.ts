@@ -3,10 +3,10 @@
  * Son puras y sin efectos secundarios.
  */
 
-import type { Task } from "../../domain/entities/Task.ts";
-import type { Subtask } from "../../domain/entities/Subtask.ts";
-import type { CodeSnippet } from "../../domain/entities/CodeSnippet.ts";
-import type { TaskDTO, SubtaskDTO, CodeSnippetDTO } from "./TaskDTO.ts";
+import type { Task } from "../../domain/entities/Task";
+import type { Subtask } from "../../domain/entities/Subtask";
+import type { CodeSnippet } from "../../domain/entities/CodeSnippet";
+import type { TaskDTO, SubtaskDTO, CodeSnippetDTO } from "./TaskDTO";
 
 /**
  * Convierte una entidad Task a TaskDTO.

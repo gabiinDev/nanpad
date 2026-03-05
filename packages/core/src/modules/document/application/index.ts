@@ -4,11 +4,11 @@
  */
 
 // ─── UseCases ────────────────────────────────────────────────────────────────
-export { CreateDocument } from "./usecases/CreateDocument.ts";
-export { UpdateDocument } from "./usecases/UpdateDocument.ts";
-export { GetDocument } from "./usecases/GetDocument.ts";
-export { ListDocuments } from "./usecases/ListDocuments.ts";
-export { DeleteDocument } from "./usecases/DeleteDocument.ts";
+export { CreateDocument } from "./usecases/CreateDocument";
+export { UpdateDocument } from "./usecases/UpdateDocument";
+export { GetDocument } from "./usecases/GetDocument";
+export { ListDocuments } from "./usecases/ListDocuments";
+export { DeleteDocument } from "./usecases/DeleteDocument";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 export type {
@@ -18,10 +18,10 @@ export type {
   UpdateDocumentInput,
   GetDocumentInput,
   ListDocumentsInput,
-} from "./dtos/DocumentDTO.ts";
+} from "./dtos/DocumentDTO";
 
 // ─── Contrato del repositorio ─────────────────────────────────────────────────
-export type { IDocumentRepository } from "../infrastructure/persistence/DocumentRepository.ts";
+export type { IDocumentRepository } from "../infrastructure/persistence/DocumentRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { DocumentSqliteRepository } from "../infrastructure/persistence/sqlite/DocumentSqliteRepository.ts";
+export { DocumentSqliteRepository } from "../infrastructure/persistence/sqlite/DocumentSqliteRepository";

@@ -4,7 +4,7 @@
  * La apertura de la conexión ocurre en apps/app (SqliteAdapter).
  */
 
-import type { IDatabase } from "./IDatabase.ts";
+import type { IDatabase } from "./IDatabase";
 
 /**
  * Ejecuta todas las migraciones pendientes sobre la base de datos proporcionada.

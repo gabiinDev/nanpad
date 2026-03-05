@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Document } from "./Document.ts";
+import { Document } from "./Document";
 
 describe("Document", () => {
   describe("create", () => {

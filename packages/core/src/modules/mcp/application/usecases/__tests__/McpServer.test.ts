@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { McpServer } from "../McpServer.ts";
-import { McpToolRegistry } from "../McpToolRegistry.ts";
+import { McpServer } from "../McpServer";
+import { McpToolRegistry } from "../McpToolRegistry";
 import {
   makeDeps,
   FakeCreateTask,
@@ -16,7 +16,7 @@ import {
   makeDocumentDTO,
   makeDocumentWithContentDTO,
   makeCategoryDTO,
-} from "./fakes.ts";
+} from "./fakes";
 
 // ─── McpToolRegistry ─────────────────────────────────────────────────────────
 

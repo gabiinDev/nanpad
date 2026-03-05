@@ -3,8 +3,8 @@
  * Define el contrato de persistencia para el módulo History.
  */
 
-import type { HistoryEntry } from "../../domain/entities/HistoryEntry.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { HistoryEntry } from "../../domain/entities/HistoryEntry";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Contrato del repositorio de registros de historial.

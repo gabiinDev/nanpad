@@ -3,12 +3,12 @@
  * Los registros de historial son inmutables: solo INSERT, nunca UPDATE/DELETE.
  */
 
-import type { IDatabase } from "@infra/db/IDatabase.ts";
-import type { IHistoryRepository } from "../HistoryRepository.ts";
-import { HistoryEntry } from "../../../domain/entities/HistoryEntry.ts";
-import type { HistoryAction } from "../../../domain/entities/HistoryEntry.ts";
-import type { HistoryEntryRow } from "@infra/db/schema.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { IDatabase } from "@infra/db/IDatabase";
+import type { IHistoryRepository } from "../HistoryRepository";
+import { HistoryEntry } from "../../../domain/entities/HistoryEntry";
+import type { HistoryAction } from "../../../domain/entities/HistoryEntry";
+import type { HistoryEntryRow } from "@infra/db/schema";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Repositorio de historial que opera sobre cualquier implementación de IDatabase.

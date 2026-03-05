@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateId, isValidId } from "./id.ts";
+import { generateId, isValidId } from "./id";
 
 describe("generateId", () => {
   it("genera un string no vacío", () => {

@@ -5,15 +5,15 @@
  */
 
 // ─── UseCases ───────────────────────────────────────────────────────────────
-export { CreateTask } from "./usecases/CreateTask.ts";
-export { UpdateTask } from "./usecases/UpdateTask.ts";
-export { ListTasks } from "./usecases/ListTasks.ts";
-export { MoveTaskStatus } from "./usecases/MoveTaskStatus.ts";
-export { CompleteTask } from "./usecases/CompleteTask.ts";
-export { RestoreTask } from "./usecases/RestoreTask.ts";
-export { AddSubtask } from "./usecases/AddSubtask.ts";
-export { AttachCodeToTask } from "./usecases/AttachCodeToTask.ts";
-export { GetTaskHistory } from "./usecases/GetTaskHistory.ts";
+export { CreateTask } from "./usecases/CreateTask";
+export { UpdateTask } from "./usecases/UpdateTask";
+export { ListTasks } from "./usecases/ListTasks";
+export { MoveTaskStatus } from "./usecases/MoveTaskStatus";
+export { CompleteTask } from "./usecases/CompleteTask";
+export { RestoreTask } from "./usecases/RestoreTask";
+export { AddSubtask } from "./usecases/AddSubtask";
+export { AttachCodeToTask } from "./usecases/AttachCodeToTask";
+export { GetTaskHistory } from "./usecases/GetTaskHistory";
 
 // ─── DTOs (contratos de datos) ───────────────────────────────────────────────
 export type {
@@ -26,11 +26,11 @@ export type {
   MoveTaskStatusInput,
   AddSubtaskInput,
   AttachCodeToTaskInput,
-} from "./dtos/TaskDTO.ts";
+} from "./dtos/TaskDTO";
 
 
 // ─── Contrato del repositorio (necesario para el Composition Root) ───────────
-export type { ITaskRepository } from "../infrastructure/persistence/TaskRepository.ts";
+export type { ITaskRepository } from "../infrastructure/persistence/TaskRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { TaskSqliteRepository } from "../infrastructure/persistence/sqlite/TaskSqliteRepository.ts";
+export { TaskSqliteRepository } from "../infrastructure/persistence/sqlite/TaskSqliteRepository";

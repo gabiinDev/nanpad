@@ -111,6 +111,41 @@ pnpm typecheck    # tsc --noEmit
 pnpm lint         # ESLint
 ```
 
+### 5. Generar el instalador
+
+Para empaquetar la aplicación y obtener el instalador (.msi/.exe en Windows, .dmg/.app en macOS, etc.):
+
+1. **Requisitos:** Node, pnpm, Rust (y en Windows, Visual Studio Build Tools con C++). Igual que para `pnpm dev` con Tauri.
+2. **Desde la raíz del repo:**
+
+   ```bash
+   pnpm build
+   cd nanpad-app
+   pnpm tauri build
+   ```
+
+   O todo desde la raíz en un solo paso (el `build` del monorepo ya compila core y frontend):
+
+   ```bash
+   pnpm build
+   pnpm --filter @nanpad/app tauri build
+   ```
+
+3. **Salida:** Los instaladores y ejecutables quedan en `nanpad-app/src-tauri/target/release/bundle/`:
+   - **Windows:** `.msi` (instalador) y `.exe` (portable).
+   - **macOS:** `.dmg` y `.app`.
+   - **Linux:** `.deb`, `.AppImage`, etc., según el target.
+
+La primera vez que ejecutes `tauri build` puede tardar más porque compila Rust y dependencias.
+
+---
+
+## Base de datos al iniciar
+
+- **Creación:** Sí. Si la base de datos no existe, se crea al iniciar la app. El adaptador usa la ruta por defecto `sqlite:nanpad.db` (en el directorio de datos de la aplicación, gestionado por Tauri).
+- **Migraciones:** Al arrancar, se ejecuta `runMigrations(db)` desde el Composition Root (`App.tsx`): se crea la tabla `schema_version` y se aplican las migraciones pendientes (p. ej. la 001 con el esquema inicial). Todo con `CREATE TABLE IF NOT EXISTS`, así que es seguro en la primera ejecución.
+- **Seed:** En el proyecto **no hay seed** que rellene datos iniciales (categorías por defecto, tareas de ejemplo, etc.). La base queda vacía tras las migraciones. Si querés datos básicos al primer arranque, se puede añadir un paso opcional “seed” que se ejecute una sola vez (por ejemplo, si `schema_version` está recién creado o si no hay categorías).
+
 ---
 
 ## Estructura del repositorio

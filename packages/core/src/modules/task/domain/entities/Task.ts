@@ -3,10 +3,10 @@
  * Contiene la lógica de negocio pura; no conoce SQLite ni React.
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
-import { TaskStatus } from "../value-objects/TaskStatus.ts";
-import { Priority } from "../value-objects/Priority.ts";
-import type { Subtask } from "./Subtask.ts";
+import { generateId, type EntityId } from "@shared/types/id";
+import { TaskStatus } from "../value-objects/TaskStatus";
+import { Priority } from "../value-objects/Priority";
+import type { Subtask } from "./Subtask";
 
 /** Props para reconstruir una Task desde persistencia. */
 export interface TaskProps {

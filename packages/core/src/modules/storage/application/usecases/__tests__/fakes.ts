@@ -3,7 +3,7 @@
  * Simula la capa de acceso a DB en memoria.
  */
 
-import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort.ts";
+import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";
 import type {
   CategoryRow,
   TagRow,
@@ -15,7 +15,7 @@ import type {
   DocumentRow,
   DocumentContentRow,
   HistoryEntryRow,
-} from "@infra/db/schema.ts";
+} from "@infra/db/schema";
 
 /** Implementación en memoria de IStoragePort para tests. */
 export class InMemoryStoragePort implements IStoragePort {

@@ -5,10 +5,10 @@
  */
 
 // ─── UseCases ───────────────────────────────────────────────────────────────
-export { CreateCategory } from "./usecases/CreateCategory.ts";
-export { UpdateCategory } from "./usecases/UpdateCategory.ts";
-export { DeleteCategory } from "./usecases/DeleteCategory.ts";
-export { ListCategories } from "./usecases/ListCategories.ts";
+export { CreateCategory } from "./usecases/CreateCategory";
+export { UpdateCategory } from "./usecases/UpdateCategory";
+export { DeleteCategory } from "./usecases/DeleteCategory";
+export { ListCategories } from "./usecases/ListCategories";
 
 // ─── DTOs (contratos de datos) ───────────────────────────────────────────────
 export type {
@@ -17,10 +17,10 @@ export type {
   UpdateCategoryInput,
   DeleteCategoryInput,
   ListCategoriesInput,
-} from "./dtos/CategoryDTO.ts";
+} from "./dtos/CategoryDTO";
 
 // ─── Contrato del repositorio (necesario para el Composition Root) ───────────
-export type { ICategoryRepository } from "../infrastructure/persistence/CategoryRepository.ts";
+export type { ICategoryRepository } from "../infrastructure/persistence/CategoryRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { CategorySqliteRepository } from "../infrastructure/persistence/sqlite/CategorySqliteRepository.ts";
+export { CategorySqliteRepository } from "../infrastructure/persistence/sqlite/CategorySqliteRepository";

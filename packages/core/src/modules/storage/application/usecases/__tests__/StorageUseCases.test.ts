@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { ExportWorkspace } from "../ExportWorkspace.ts";
-import { ImportWorkspace } from "../ImportWorkspace.ts";
-import { BackupNow } from "../BackupNow.ts";
-import { InMemoryStoragePort, makeTaskRow, makeCategoryRow } from "./fakes.ts";
+import { ExportWorkspace } from "../ExportWorkspace";
+import { ImportWorkspace } from "../ImportWorkspace";
+import { BackupNow } from "../BackupNow";
+import { InMemoryStoragePort, makeTaskRow, makeCategoryRow } from "./fakes";
 
 describe("ExportWorkspace", () => {
   let port: InMemoryStoragePort;

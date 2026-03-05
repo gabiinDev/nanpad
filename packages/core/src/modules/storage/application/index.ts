@@ -4,9 +4,9 @@
  */
 
 // ─── UseCases ────────────────────────────────────────────────────────────────
-export { ExportWorkspace } from "./usecases/ExportWorkspace.ts";
-export { ImportWorkspace } from "./usecases/ImportWorkspace.ts";
-export { BackupNow } from "./usecases/BackupNow.ts";
+export { ExportWorkspace } from "./usecases/ExportWorkspace";
+export { ImportWorkspace } from "./usecases/ImportWorkspace";
+export { BackupNow } from "./usecases/BackupNow";
 
 // ─── DTOs ─────────────────────────────────────────────────────────────────────
 export type {
@@ -16,7 +16,7 @@ export type {
   ImportWorkspaceInput,
   ImportWorkspaceResult,
   BackupResult,
-} from "./dtos/StorageDTO.ts";
+} from "./dtos/StorageDTO";
 
 // ─── Puerto de infraestructura (el Composition Root debe implementarlo) ───────
-export type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort.ts";
+export type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";

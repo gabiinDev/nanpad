@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { CreateTask } from "../CreateTask.ts";
-import { EventBus } from "@shared/event-bus/EventBus.ts";
-import { InMemoryTaskRepository } from "./fakes.ts";
+import { CreateTask } from "../CreateTask";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { InMemoryTaskRepository } from "./fakes";
 
 describe("CreateTask", () => {
   let repo: InMemoryTaskRepository;

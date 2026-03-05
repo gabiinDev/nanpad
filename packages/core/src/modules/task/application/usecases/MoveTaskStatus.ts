@@ -2,12 +2,12 @@
  * UseCase: Mover una tarea a un nuevo estado (para vista Kanban).
  */
 
-import { TaskStatus } from "../../domain/value-objects/TaskStatus.ts";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository.ts";
-import type { IEventBus } from "@shared/event-bus/types.ts";
-import { createEvent } from "@shared/event-bus/EventBus.ts";
-import type { MoveTaskStatusInput, TaskDTO } from "../dtos/TaskDTO.ts";
-import { taskToDTO } from "../dtos/mappers.ts";
+import { TaskStatus } from "../../domain/value-objects/TaskStatus";
+import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { IEventBus } from "@shared/event-bus/types";
+import { createEvent } from "@shared/event-bus/EventBus";
+import type { MoveTaskStatusInput, TaskDTO } from "../dtos/TaskDTO";
+import { taskToDTO } from "../dtos/mappers";
 
 /**
  * Cambia el estado de una tarea.

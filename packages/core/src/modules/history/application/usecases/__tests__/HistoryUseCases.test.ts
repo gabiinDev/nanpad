@@ -3,11 +3,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { RecordChange } from "../RecordChange.ts";
-import { GetEntityHistory } from "../GetEntityHistory.ts";
-import { HistoryEventListener } from "../HistoryEventListener.ts";
-import { EventBus } from "@shared/event-bus/EventBus.ts";
-import { InMemoryHistoryRepository } from "./fakes.ts";
+import { RecordChange } from "../RecordChange";
+import { GetEntityHistory } from "../GetEntityHistory";
+import { HistoryEventListener } from "../HistoryEventListener";
+import { EventBus } from "@shared/event-bus/EventBus";
+import { InMemoryHistoryRepository } from "./fakes";
 
 describe("RecordChange", () => {
   let repo: InMemoryHistoryRepository;

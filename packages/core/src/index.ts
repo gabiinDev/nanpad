@@ -5,7 +5,7 @@
  */
 
 // ─── Shared Kernel ───────────────────────────────────────────────────────────
-export { EventBus, createEvent } from "./shared/event-bus/EventBus.ts";
+export { EventBus, createEvent } from "./shared/event-bus/EventBus";
 export type {
   IEventBus,
   AppEvent,
@@ -22,15 +22,15 @@ export type {
   DocumentCreatedPayload,
   DocumentUpdatedPayload,
   DocumentDeletedPayload,
-} from "./shared/event-bus/types.ts";
-export { generateId, isValidId } from "./shared/types/id.ts";
-export type { EntityId } from "./shared/types/id.ts";
-export { ok, err } from "./shared/types/result.ts";
-export type { Result, Ok, Err } from "./shared/types/result.ts";
+} from "./shared/event-bus/types";
+export { generateId, isValidId } from "./shared/types/id";
+export type { EntityId } from "./shared/types/id";
+export { ok, err } from "./shared/types/result";
+export type { Result, Ok, Err } from "./shared/types/result";
 
 // ─── Infraestructura (contratos) ─────────────────────────────────────────────
-export type { IDatabase } from "./infrastructure/db/IDatabase.ts";
-export { runMigrations } from "./infrastructure/db/index.ts";
+export type { IDatabase } from "./infrastructure/db/IDatabase";
+export { runMigrations } from "./infrastructure/db/index";
 export type {
   SchemaVersionRow,
   CategoryRow,
@@ -43,10 +43,10 @@ export type {
   DocumentRow,
   DocumentContentRow,
   HistoryEntryRow,
-} from "./infrastructure/db/schema.ts";
+} from "./infrastructure/db/schema";
 
 // ─── Módulo MCP ──────────────────────────────────────────────────────────────
-export { McpServer, McpToolRegistry } from "./modules/mcp/application/index.ts";
+export { McpServer, McpToolRegistry } from "./modules/mcp/application/index";
 export type {
   McpServerDeps,
   McpRequest,
@@ -56,14 +56,14 @@ export type {
   McpToolEntry,
   McpParamSchema,
   McpParamType,
-} from "./modules/mcp/application/index.ts";
+} from "./modules/mcp/application/index";
 
 // ─── Módulo Storage ──────────────────────────────────────────────────────────
 export {
   ExportWorkspace,
   ImportWorkspace,
   BackupNow,
-} from "./modules/storage/application/index.ts";
+} from "./modules/storage/application/index";
 export type {
   WorkspaceSnapshot,
   ExportWorkspaceInput,
@@ -72,7 +72,7 @@ export type {
   ImportWorkspaceResult,
   BackupResult,
   IStoragePort,
-} from "./modules/storage/application/index.ts";
+} from "./modules/storage/application/index";
 
 // ─── Módulo Document ─────────────────────────────────────────────────────────
 export {
@@ -82,7 +82,7 @@ export {
   ListDocuments,
   DeleteDocument,
   DocumentSqliteRepository,
-} from "./modules/document/application/index.ts";
+} from "./modules/document/application/index";
 export type {
   DocumentDTO,
   DocumentWithContentDTO,
@@ -91,7 +91,7 @@ export type {
   GetDocumentInput,
   ListDocumentsInput,
   IDocumentRepository,
-} from "./modules/document/application/index.ts";
+} from "./modules/document/application/index";
 
 // ─── Módulo History ──────────────────────────────────────────────────────────
 export {
@@ -99,14 +99,14 @@ export {
   GetEntityHistory,
   HistoryEventListener,
   HistorySqliteRepository,
-} from "./modules/history/application/index.ts";
+} from "./modules/history/application/index";
 export type {
   HistoryEntryDTO,
   RecordChangeInput,
   GetEntityHistoryInput,
   HistoryAction,
   IHistoryRepository,
-} from "./modules/history/application/index.ts";
+} from "./modules/history/application/index";
 
 // ─── Módulo Category ─────────────────────────────────────────────────────────
 export {
@@ -115,7 +115,7 @@ export {
   DeleteCategory,
   ListCategories,
   CategorySqliteRepository,
-} from "./modules/category/application/index.ts";
+} from "./modules/category/application/index";
 export type {
   CategoryDTO,
   CreateCategoryInput,
@@ -123,7 +123,7 @@ export type {
   DeleteCategoryInput,
   ListCategoriesInput,
   ICategoryRepository,
-} from "./modules/category/application/index.ts";
+} from "./modules/category/application/index";
 
 // ─── Módulo Task ─────────────────────────────────────────────────────────────
 export {
@@ -137,7 +137,7 @@ export {
   AttachCodeToTask,
   GetTaskHistory,
   TaskSqliteRepository,
-} from "./modules/task/application/index.ts";
+} from "./modules/task/application/index";
 export type {
   TaskDTO,
   SubtaskDTO,
@@ -149,4 +149,4 @@ export type {
   AddSubtaskInput,
   AttachCodeToTaskInput,
   ITaskRepository,
-} from "./modules/task/application/index.ts";
+} from "./modules/task/application/index";

@@ -3,11 +3,11 @@
  * No importa nada de Tauri — recibe IDatabase por inyección.
  */
 
-import type { IDatabase } from "@infra/db/IDatabase.ts";
-import type { ICategoryRepository, CategoryFilters } from "../CategoryRepository.ts";
-import { Category } from "../../../domain/entities/Category.ts";
-import type { CategoryRow } from "@infra/db/schema.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { IDatabase } from "@infra/db/IDatabase";
+import type { ICategoryRepository, CategoryFilters } from "../CategoryRepository";
+import { Category } from "../../../domain/entities/Category";
+import type { CategoryRow } from "@infra/db/schema";
+import type { EntityId } from "@shared/types/id";
 
 /**
  * Repositorio de categorías que opera sobre cualquier implementación de IDatabase.

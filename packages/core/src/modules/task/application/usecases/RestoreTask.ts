@@ -2,11 +2,11 @@
  * UseCase: Restaurar una tarea completada o archivada al estado "todo".
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository.ts";
-import type { IEventBus } from "@shared/event-bus/types.ts";
-import { createEvent } from "@shared/event-bus/EventBus.ts";
-import type { TaskDTO } from "../dtos/TaskDTO.ts";
-import { taskToDTO } from "../dtos/mappers.ts";
+import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { IEventBus } from "@shared/event-bus/types";
+import { createEvent } from "@shared/event-bus/EventBus";
+import type { TaskDTO } from "../dtos/TaskDTO";
+import { taskToDTO } from "../dtos/mappers";
 
 /**
  * Restaura una tarea al estado "todo".

@@ -2,9 +2,9 @@
  * UseCase: Listar tareas con filtros opcionales.
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository.ts";
-import type { TaskFilters, TaskDTO } from "../dtos/TaskDTO.ts";
-import { taskToDTO } from "../dtos/mappers.ts";
+import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { TaskFilters, TaskDTO } from "../dtos/TaskDTO";
+import { taskToDTO } from "../dtos/mappers";
 
 /**
  * Lista las tareas aplicando filtros opcionales.

@@ -4,7 +4,7 @@
  * Inmutable externamente; los métodos retornan nuevas instancias.
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
+import { generateId, type EntityId } from "@shared/types/id";
 
 /** Props para reconstruir una Category desde persistencia. */
 export interface CategoryProps {

@@ -3,20 +3,20 @@
  * No importa nada de Tauri — recibe IDatabase por inyección.
  */
 
-import type { IDatabase } from "@infra/db/IDatabase.ts";
-import type { ITaskRepository } from "../TaskRepository.ts";
-import { Task } from "../../../domain/entities/Task.ts";
-import { Subtask } from "../../../domain/entities/Subtask.ts";
-import { CodeSnippet } from "../../../domain/entities/CodeSnippet.ts";
-import { TaskStatus } from "../../../domain/value-objects/TaskStatus.ts";
-import { Priority } from "../../../domain/value-objects/Priority.ts";
-import type { TaskFilters } from "../../../application/dtos/TaskDTO.ts";
-import type { EntityId } from "@shared/types/id.ts";
+import type { IDatabase } from "@infra/db/IDatabase";
+import type { ITaskRepository } from "../TaskRepository";
+import { Task } from "../../../domain/entities/Task";
+import { Subtask } from "../../../domain/entities/Subtask";
+import { CodeSnippet } from "../../../domain/entities/CodeSnippet";
+import { TaskStatus } from "../../../domain/value-objects/TaskStatus";
+import { Priority } from "../../../domain/value-objects/Priority";
+import type { TaskFilters } from "../../../application/dtos/TaskDTO";
+import type { EntityId } from "@shared/types/id";
 import type {
   TaskRow,
   SubtaskRow,
   TaskCodeSnippetRow,
-} from "@infra/db/schema.ts";
+} from "@infra/db/schema";
 
 /**
  * Repositorio de tareas que opera sobre cualquier implementación de IDatabase.

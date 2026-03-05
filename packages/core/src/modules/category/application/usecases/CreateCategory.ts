@@ -2,12 +2,12 @@
  * UseCase: Crear una nueva categoría.
  */
 
-import { Category } from "../../domain/entities/Category.ts";
-import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository.ts";
-import type { IEventBus } from "@shared/event-bus/types.ts";
-import { createEvent } from "@shared/event-bus/EventBus.ts";
-import type { CreateCategoryInput, CategoryDTO } from "../dtos/CategoryDTO.ts";
-import { categoryToDTO } from "../dtos/mappers.ts";
+import { Category } from "../../domain/entities/Category";
+import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository";
+import type { IEventBus } from "@shared/event-bus/types";
+import { createEvent } from "@shared/event-bus/EventBus";
+import type { CreateCategoryInput, CategoryDTO } from "../dtos/CategoryDTO";
+import { categoryToDTO } from "../dtos/mappers";
 
 /**
  * Crea una nueva categoría y la persiste.

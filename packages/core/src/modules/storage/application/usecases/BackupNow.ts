@@ -3,9 +3,9 @@
  * Delega en ExportWorkspace y añade metadata adicional para identificar el backup.
  */
 
-import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort.ts";
-import { ExportWorkspace } from "./ExportWorkspace.ts";
-import type { BackupResult } from "../dtos/StorageDTO.ts";
+import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";
+import { ExportWorkspace } from "./ExportWorkspace";
+import type { BackupResult } from "../dtos/StorageDTO";
 
 /**
  * Genera un snapshot completo del workspace (incluido historial).

@@ -3,9 +3,9 @@
  * Delega en IHistoryRepository del módulo History (inyectado desde el Composition Root).
  */
 
-import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository.ts";
-import type { HistoryEntryDTO } from "@modules/history/application/dtos/HistoryDTO.ts";
-import { historyEntryToDTO } from "@modules/history/application/dtos/mappers.ts";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import type { HistoryEntryDTO } from "@modules/history/application/dtos/HistoryDTO";
+import { historyEntryToDTO } from "@modules/history/application/dtos/mappers";
 
 /**
  * Obtiene el historial de cambios de una tarea ordenado cronológicamente.

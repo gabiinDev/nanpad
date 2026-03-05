@@ -2,10 +2,10 @@
  * UseCase: Añadir una subtarea a una tarea existente.
  */
 
-import { Subtask } from "../../domain/entities/Subtask.ts";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository.ts";
-import type { AddSubtaskInput, SubtaskDTO } from "../dtos/TaskDTO.ts";
-import { subtaskToDTO } from "../dtos/mappers.ts";
+import { Subtask } from "../../domain/entities/Subtask";
+import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { AddSubtaskInput, SubtaskDTO } from "../dtos/TaskDTO";
+import { subtaskToDTO } from "../dtos/mappers";
 
 /**
  * Añade una nueva subtarea a una tarea existente.

@@ -7,7 +7,7 @@
  * ningún UseCase de Task/Category importa nada de History.
  */
 
-import type { IEventBus } from "@shared/event-bus/types.ts";
+import type { IEventBus } from "@shared/event-bus/types";
 import type {
   TaskCreatedPayload,
   TaskUpdatedPayload,
@@ -17,10 +17,10 @@ import type {
   CategoryCreatedPayload,
   CategoryUpdatedPayload,
   CategoryDeletedPayload,
-} from "@shared/event-bus/types.ts";
-import type { AppEvent } from "@shared/event-bus/types.ts";
-import { RecordChange } from "./RecordChange.ts";
-import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository.ts";
+} from "@shared/event-bus/types";
+import type { AppEvent } from "@shared/event-bus/types";
+import { RecordChange } from "./RecordChange";
+import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository";
 
 /**
  * Registra en el historial los eventos de dominio emitidos por otros módulos.

@@ -4,12 +4,12 @@
  * y restaura las tablas (merge o replace según la opción elegida).
  */
 
-import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort.ts";
+import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";
 import type {
   ImportWorkspaceInput,
   ImportWorkspaceResult,
   WorkspaceSnapshot,
-} from "../dtos/StorageDTO.ts";
+} from "../dtos/StorageDTO";
 
 /**
  * Importa un snapshot previamente exportado con ExportWorkspace.

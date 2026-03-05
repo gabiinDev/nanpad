@@ -9,7 +9,7 @@ import type {
   AppEvent,
   EventHandler,
   EventPayload,
-} from "./types.ts";
+} from "./types";
 
 /** @internal Map de tipo de evento a lista de handlers registrados. */
 type HandlerMap = Map<string, EventHandler[]>;

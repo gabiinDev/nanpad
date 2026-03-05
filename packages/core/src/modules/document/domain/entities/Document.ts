@@ -5,7 +5,7 @@
  * cuando se hace un GetDocument (no en ListDocuments).
  */
 
-import { generateId, type EntityId } from "@shared/types/id.ts";
+import { generateId, type EntityId } from "@shared/types/id";
 
 /** Props para reconstruir un Document desde persistencia. */
 export interface DocumentProps {

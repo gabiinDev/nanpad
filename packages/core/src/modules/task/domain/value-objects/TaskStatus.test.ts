@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TaskStatus } from "./TaskStatus.ts";
+import { TaskStatus } from "./TaskStatus";
 
 describe("TaskStatus", () => {
   it("crea un TaskStatus desde string válido", () => {

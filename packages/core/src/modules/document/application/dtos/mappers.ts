@@ -2,8 +2,8 @@
  * Funciones de mapeo entre entidades de dominio y DTOs del módulo Document.
  */
 
-import type { Document } from "../../domain/entities/Document.ts";
-import type { DocumentDTO, DocumentWithContentDTO } from "./DocumentDTO.ts";
+import type { Document } from "../../domain/entities/Document";
+import type { DocumentDTO, DocumentWithContentDTO } from "./DocumentDTO";
 
 /**
  * Convierte un Document a su DTO de metadata (sin contenido).

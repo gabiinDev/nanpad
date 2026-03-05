@@ -6,9 +6,9 @@
 import type {
   ICategoryRepository,
   CategoryFilters,
-} from "../../../infrastructure/persistence/CategoryRepository.ts";
-import type { Category } from "../../../domain/entities/Category.ts";
-import type { EntityId } from "@shared/types/id.ts";
+} from "../../../infrastructure/persistence/CategoryRepository";
+import type { Category } from "../../../domain/entities/Category";
+import type { EntityId } from "@shared/types/id";
 
 /** Repositorio de categorías en memoria para tests. */
 export class InMemoryCategoryRepository implements ICategoryRepository {

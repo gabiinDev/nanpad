@@ -1,0 +1,9 @@
+---
+description: Idioma y estilo de mensajes de commit en este proyecto
+alwaysApply: true
+---
+
+# Mensajes de commit
+
+- **Idioma**: Escribe siempre los mensajes de commit en **español**.
+- Esta regla tiene prioridad para cualquier generación de mensajes de commit en este workspace.

@@ -3,16 +3,31 @@
  * Orquesta: barra de filtros (status + categoría), toggle lista/kanban, formulario y las vistas.
  */
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useApp } from "@app/AppContext.tsx";
 import { useTaskStore } from "@/store/useTaskStore.ts";
 import { useCategoryStore } from "@/store/useCategoryStore.ts";
+import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
 import { TaskListView } from "./components/TaskListView.tsx";
 import { KanbanView } from "./components/KanbanView.tsx";
 import { TaskForm } from "./components/TaskForm.tsx";
 import { TaskSearchBar, taskMatchesQuery } from "./components/TaskSearchBar.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
 import type { TaskDTO, CreateTaskInput, UpdateTaskInput } from "@nanpad/core";
+
+const TASK_UNDO_SAVE_DEBOUNCE_MS = 500;
+
+/** Devuelve true si el foco está en un campo editable (no disparar atajos undo/redo). */
+function isEditableFocused(): boolean {
+  const el = document.activeElement;
+  if (!el) return false;
+  const tag = el.tagName.toLowerCase();
+  const role = (el.getAttribute?.("role") ?? "").toLowerCase();
+  const isInput = tag === "input" || tag === "textarea" || tag === "select";
+  const isContentEditable = (el as HTMLElement).isContentEditable;
+  const isMonaco = el.closest?.(".monaco-editor") != null;
+  return isInput || isContentEditable || isMonaco || role === "textbox";
+}
 
 const STATUS_FILTERS = [
   { value: undefined, label: "Todas" },
@@ -38,6 +53,11 @@ export default function TasksPage() {
     moveTaskStatus,
     setFilters,
     setView,
+    taskUndoStack,
+    taskRedoStack,
+    undoTaskChange,
+    redoTaskChange,
+    setTaskUndoStacks,
   } = useTaskStore();
   const { categories, loadCategories } = useCategoryStore();
 
@@ -48,18 +68,53 @@ export default function TasksPage() {
   useEffect(() => {
     void loadTasks(uc);
     void loadCategories(uc);
+    uc.loadTaskUndoSession().then((session) => {
+      setTaskUndoStacks(session.undo, session.redo);
+    });
   }, [uc]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Aplicar vista por defecto (lista/kanban) al entrar en Tareas
+  useEffect(() => {
+    useTaskStore.getState().setView(useAppSettingsStore.getState().default_task_view);
+  }, []);
+
+  const saveTaskUndoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (saveTaskUndoRef.current) clearTimeout(saveTaskUndoRef.current);
+    saveTaskUndoRef.current = setTimeout(() => {
+      saveTaskUndoRef.current = null;
+      void uc.saveTaskUndoSession({ undo: taskUndoStack, redo: taskRedoStack });
+    }, TASK_UNDO_SAVE_DEBOUNCE_MS);
+    return () => {
+      if (saveTaskUndoRef.current) clearTimeout(saveTaskUndoRef.current);
+    };
+  }, [uc, taskUndoStack, taskRedoStack]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key === "n") {
         e.preventDefault();
         setEditingTask(null);
+        return;
+      }
+      if (e.key === "z" && !e.shiftKey) {
+        if (!isEditableFocused()) {
+          e.preventDefault();
+          void undoTaskChange(uc);
+        }
+        return;
+      }
+      if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+        if (!isEditableFocused()) {
+          e.preventDefault();
+          void redoTaskChange(uc);
+        }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [uc, undoTaskChange, redoTaskChange]);
 
   const handleSave = useCallback(
     async (input: CreateTaskInput | UpdateTaskInput) => {

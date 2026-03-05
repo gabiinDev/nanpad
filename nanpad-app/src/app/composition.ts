@@ -45,6 +45,22 @@ import {
   BackupNow,
 } from "@nanpad/core";
 import { SqliteStorageAdapter } from "@/infrastructure/SqliteStorageAdapter.ts";
+import {
+  loadExplorerSessionFromDb,
+  saveExplorerSessionToDb,
+  type PersistedExplorerSession,
+} from "@/infrastructure/explorerSessionPersistence.ts";
+import {
+  loadTaskUndoSessionFromDb,
+  saveTaskUndoSessionToDb,
+  type TaskUndoSession,
+} from "@/infrastructure/taskUndoPersistence.ts";
+import {
+  loadAppSettingsFromDb,
+  saveAppSettingToDb,
+  type AppSettings,
+  type AppSettingsKey,
+} from "@/infrastructure/appSettingsPersistence.ts";
 
 /** Conjunto de todos los UseCases disponibles en la app. */
 export interface AppUseCases {
@@ -78,6 +94,15 @@ export interface AppUseCases {
   exportWorkspace: ExportWorkspace;
   importWorkspace: ImportWorkspace;
   backupNow: BackupNow;
+  // Explorador: sesión en SQLite (tabs reales + activo)
+  loadExplorerSession: () => Promise<PersistedExplorerSession | null>;
+  saveExplorerSession: (session: PersistedExplorerSession) => Promise<void>;
+  // Tareas: pilas undo/redo (tope 5)
+  loadTaskUndoSession: () => Promise<TaskUndoSession>;
+  saveTaskUndoSession: (session: TaskUndoSession) => Promise<void>;
+  // Preferencias de app (tema, ayuda, vista por defecto tareas)
+  loadAppSettings: () => Promise<AppSettings>;
+  saveAppSetting: (key: AppSettingsKey, value: string | boolean) => Promise<void>;
 }
 
 /**
@@ -132,6 +157,23 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const importWorkspace = new ImportWorkspace(storageAdapter);
   const backupNow = new BackupNow(storageAdapter);
 
+  // ─── Sesión del explorador (SQLite) ─────────────────────────────────────────
+  const loadExplorerSession = (): Promise<PersistedExplorerSession | null> =>
+    loadExplorerSessionFromDb(db);
+  const saveExplorerSession = (session: PersistedExplorerSession): Promise<void> =>
+    saveExplorerSessionToDb(db, session);
+
+  // ─── Sesión undo/redo de tareas (SQLite) ────────────────────────────────────
+  const loadTaskUndoSession = (): Promise<TaskUndoSession> =>
+    loadTaskUndoSessionFromDb(db);
+  const saveTaskUndoSession = (session: TaskUndoSession): Promise<void> =>
+    saveTaskUndoSessionToDb(db, session);
+
+  // ─── Preferencias de app (SQLite) ────────────────────────────────────────────
+  const loadAppSettings = (): Promise<AppSettings> => loadAppSettingsFromDb(db);
+  const saveAppSetting = (key: AppSettingsKey, value: string | boolean): Promise<void> =>
+    saveAppSettingToDb(db, key, value);
+
   // ─── MCP Server ──────────────────────────────────────────────────────────────
   const mcpServer = new McpServer({
     createTask,
@@ -170,5 +212,11 @@ export function buildComposition(db: IDatabase): AppUseCases {
     exportWorkspace,
     importWorkspace,
     backupNow,
+    loadExplorerSession,
+    saveExplorerSession,
+    loadTaskUndoSession,
+    saveTaskUndoSession,
+    loadAppSettings,
+    saveAppSetting,
   };
 }

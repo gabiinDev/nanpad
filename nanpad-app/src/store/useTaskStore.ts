@@ -1,8 +1,7 @@
 /**
  * Store de tareas con Zustand.
  * Mantiene la lista de tareas, los filtros activos y el modo de vista.
- * Los UseCases se reciben como parámetro en las acciones para no romper
- * la regla de no-singleton (el store no importa el contexto directamente).
+ * Incluye undo/redo de cambios (máx. 5 pasos, encolado) para lista y Kanban.
  */
 
 import { create } from "zustand";
@@ -16,46 +15,65 @@ import type { AppUseCases } from "@app/composition.ts";
 
 export type TaskView = "list" | "kanban";
 
+const MAX_TASK_UNDO_STEPS = 5;
+
 interface TaskStore {
   // ─── Estado ───────────────────────────────────────────────────────────────
-  /** Tareas filtradas por los filtros activos. Usar en vista lista. */
   tasks: TaskDTO[];
-  /** Todas las tareas sin filtro de status. Usar en vista Kanban. */
   allTasks: TaskDTO[];
   filters: TaskFilters;
   view: TaskView;
   loading: boolean;
   error: string | null;
+  /** Pila de estados anteriores (encolado: máx. 5). */
+  taskUndoStack: TaskDTO[];
+  taskRedoStack: TaskDTO[];
 
   // ─── Acciones ─────────────────────────────────────────────────────────────
 
-  /** Carga las tareas: filtradas en `tasks` y todas en `allTasks`. */
   loadTasks: (uc: AppUseCases) => Promise<void>;
-
-  /** Crea una tarea y recarga la lista. */
   createTask: (uc: AppUseCases, input: CreateTaskInput) => Promise<TaskDTO>;
-
-  /** Actualiza una tarea y recarga la lista. */
   updateTask: (uc: AppUseCases, input: UpdateTaskInput) => Promise<void>;
-
-  /** Completa una tarea y recarga. */
   completeTask: (uc: AppUseCases, taskId: string) => Promise<void>;
-
-  /** Restaura una tarea y recarga. */
   restoreTask: (uc: AppUseCases, taskId: string) => Promise<void>;
-
-  /** Mueve una tarea a otro status y recarga. */
   moveTaskStatus: (
     uc: AppUseCases,
     taskId: string,
     newStatus: TaskDTO["status"]
   ) => Promise<void>;
-
-  /** Actualiza los filtros y recarga la lista. */
   setFilters: (uc: AppUseCases, filters: TaskFilters) => Promise<void>;
-
-  /** Cambia entre vista lista y kanban. */
   setView: (view: TaskView) => void;
+
+  /** Deshace el último cambio de tarea (Ctrl+Z). */
+  undoTaskChange: (uc: AppUseCases) => Promise<boolean>;
+  /** Rehace el último cambio deshecho (Ctrl+Y). */
+  redoTaskChange: (uc: AppUseCases) => Promise<boolean>;
+  /** Hidrata las pilas desde la sesión persistida. */
+  setTaskUndoStacks: (undo: TaskDTO[], redo: TaskDTO[]) => void;
+}
+
+/** Copia superficial de un TaskDTO para guardar en la pila (evitar referencias). */
+function snapshotTask(dto: TaskDTO): TaskDTO {
+  return {
+    ...dto,
+    categoryIds: [...dto.categoryIds],
+    tagIds: [...dto.tagIds],
+    subtasks: dto.subtasks.map((s) => ({ ...s })),
+  };
+}
+
+/** Construye UpdateTaskInput desde un TaskDTO (sin status; status se aplica con moveTaskStatus). */
+function taskDTOToUpdateInput(dto: TaskDTO): UpdateTaskInput {
+  return {
+    id: dto.id,
+    title: dto.title,
+    description: dto.description,
+    priority: dto.priority,
+    categoryIds: dto.categoryIds,
+    tagIds: dto.tagIds,
+    sortOrder: dto.sortOrder,
+    documentId: dto.documentId,
+  };
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -65,6 +83,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   view: "kanban",
   loading: false,
   error: null,
+  taskUndoStack: [],
+  taskRedoStack: [],
 
   loadTasks: async (uc) => {
     set({ loading: true, error: null });
@@ -92,21 +112,53 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   updateTask: async (uc, input) => {
+    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const task = tasks.find((t) => t.id === input.id) ?? allTasks.find((t) => t.id === input.id);
+    if (task) {
+      set({
+        taskUndoStack: [...taskUndoStack, snapshotTask(task)].slice(-MAX_TASK_UNDO_STEPS),
+        taskRedoStack: [],
+      });
+    }
     await uc.updateTask.execute(input);
     await get().loadTasks(uc);
   },
 
   completeTask: async (uc, taskId) => {
+    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
+    if (task) {
+      set({
+        taskUndoStack: [...taskUndoStack, snapshotTask(task)].slice(-MAX_TASK_UNDO_STEPS),
+        taskRedoStack: [],
+      });
+    }
     await uc.completeTask.execute(taskId);
     await get().loadTasks(uc);
   },
 
   restoreTask: async (uc, taskId) => {
+    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
+    if (task) {
+      set({
+        taskUndoStack: [...taskUndoStack, snapshotTask(task)].slice(-MAX_TASK_UNDO_STEPS),
+        taskRedoStack: [],
+      });
+    }
     await uc.restoreTask.execute(taskId);
     await get().loadTasks(uc);
   },
 
   moveTaskStatus: async (uc, taskId, newStatus) => {
+    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
+    if (task) {
+      set({
+        taskUndoStack: [...taskUndoStack, snapshotTask(task)].slice(-MAX_TASK_UNDO_STEPS),
+        taskRedoStack: [],
+      });
+    }
     await uc.moveTaskStatus.execute({ id: taskId, newStatus });
     await get().loadTasks(uc);
   },
@@ -117,4 +169,52 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   setView: (view) => { set({ view }); },
+
+  setTaskUndoStacks: (undo, redo) => {
+    set({ taskUndoStack: undo, taskRedoStack: redo });
+  },
+
+  undoTaskChange: async (uc) => {
+    const { taskUndoStack, taskRedoStack, tasks, allTasks } = get();
+    const previous = taskUndoStack[taskUndoStack.length - 1];
+    if (!previous) return false;
+    const current = tasks.find((t) => t.id === previous.id) ?? allTasks.find((t) => t.id === previous.id);
+    if (!current) {
+      set({ taskUndoStack: taskUndoStack.slice(0, -1) });
+      await get().loadTasks(uc);
+      return true;
+    }
+    set({
+      taskUndoStack: taskUndoStack.slice(0, -1),
+      taskRedoStack: [...taskRedoStack, snapshotTask(current)].slice(-MAX_TASK_UNDO_STEPS),
+    });
+    await uc.updateTask.execute(taskDTOToUpdateInput(previous));
+    if (previous.status !== current.status) {
+      await uc.moveTaskStatus.execute({ id: previous.id, newStatus: previous.status });
+    }
+    await get().loadTasks(uc);
+    return true;
+  },
+
+  redoTaskChange: async (uc) => {
+    const { taskUndoStack, taskRedoStack, tasks, allTasks } = get();
+    const next = taskRedoStack[taskRedoStack.length - 1];
+    if (!next) return false;
+    const current = tasks.find((t) => t.id === next.id) ?? allTasks.find((t) => t.id === next.id);
+    if (!current) {
+      set({ taskRedoStack: taskRedoStack.slice(0, -1) });
+      await get().loadTasks(uc);
+      return true;
+    }
+    set({
+      taskRedoStack: taskRedoStack.slice(0, -1),
+      taskUndoStack: [...taskUndoStack, snapshotTask(current)].slice(-MAX_TASK_UNDO_STEPS),
+    });
+    await uc.updateTask.execute(taskDTOToUpdateInput(next));
+    if (next.status !== current.status) {
+      await uc.moveTaskStatus.execute({ id: next.id, newStatus: next.status });
+    }
+    await get().loadTasks(uc);
+    return true;
+  },
 }));

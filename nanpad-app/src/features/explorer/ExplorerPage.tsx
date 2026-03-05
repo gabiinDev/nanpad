@@ -8,7 +8,8 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useExplorerStore } from "@/store/useExplorerStore.ts";
+import { useApp } from "@app/AppContext.tsx";
+import { useExplorerStore, getSessionFromStore } from "@/store/useExplorerStore.ts";
 import { loadAllTempFiles, openFolderDialog } from "@/infrastructure/FsService.ts";
 import { homeDir } from "@tauri-apps/api/path";
 import { FileTree } from "./components/FileTree.tsx";
@@ -23,14 +24,18 @@ interface ExplorerPageProps {
  * Página principal del explorador de archivos.
  */
 export default function ExplorerPage({ isDark }: ExplorerPageProps) {
+  const { loadExplorerSession, saveExplorerSession } = useApp();
   const {
     openTabs,
     activeTabId,
+    mdViewModes,
+    closedTabsStack,
     initialized,
     init,
     setRoot,
     closeTab,
     createTempTab,
+    restoreLastClosedTab,
   } = useExplorerStore();
 
   useEffect(() => {
@@ -39,10 +44,20 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
         e.preventDefault();
         void createTempTab();
       }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z") {
+        const el = document.activeElement;
+        if (el instanceof HTMLElement) {
+          const tag = el.tagName;
+          if (tag === "INPUT" || tag === "TEXTAREA") return;
+          if (el.isContentEditable || el.closest(".monaco-editor")) return;
+        }
+        e.preventDefault();
+        void restoreLastClosedTab();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [createTempTab]);
+  }, [createTempTab, restoreLastClosedTab]);
 
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const [dragging, setDragging] = useState(false);
@@ -55,14 +70,54 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
     initStarted.current = true;
 
     async function initExplorer() {
-      const [metas, home] = await Promise.all([
+      const [metas, home, session] = await Promise.all([
         loadAllTempFiles(),
         homeDir(),
+        loadExplorerSession(),
       ]);
-      await init(metas, home);
+      await init(metas, home, session ?? undefined);
     }
     void initExplorer();
-  }, [initialized, init]);
+  }, [initialized, init, loadExplorerSession]);
+
+  // Persistir sesión en SQLite con debounce para no saturar la DB (solo tras init).
+  // La sesión se "limpia" automáticamente: guardamos el estado actual de openTabs,
+  // que no incluye paths cuyos archivos ya no existían al restaurar.
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!initialized) return;
+    const DEBOUNCE_MS = 500;
+    if (saveTimeoutRef.current !== null) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTimeoutRef.current = null;
+      const session = getSessionFromStore(openTabs, activeTabId, mdViewModes, closedTabsStack);
+      void saveExplorerSession(session);
+    }, DEBOUNCE_MS);
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
+  }, [initialized, openTabs, activeTabId, mdViewModes, closedTabsStack, saveExplorerSession]);
+
+  // Flush al cerrar/ocultar la ventana para no perder el último estado
+  useEffect(() => {
+    if (!initialized) return;
+    const flush = () => {
+      const state = useExplorerStore.getState();
+      const session = getSessionFromStore(
+        state.openTabs,
+        state.activeTabId,
+        state.mdViewModes,
+        state.closedTabsStack
+      );
+      void saveExplorerSession(session);
+    };
+    const onBeforeUnload = () => { flush(); };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [initialized, saveExplorerSession]);
 
 
   // ── Cambio de carpeta raíz ────────────────────────────────────────────────

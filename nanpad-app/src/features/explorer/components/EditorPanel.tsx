@@ -9,7 +9,7 @@ import { useRef, useCallback, useEffect, useState } from "react";
 import MonacoEditor, { useMonaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import type { OpenTab } from "@/store/useExplorerStore.ts";
-import { useExplorerStore } from "@/store/useExplorerStore.ts";
+import { useExplorerStore, type MdPanelMode } from "@/store/useExplorerStore.ts";
 import { detectLanguage } from "@features/explorer/utils/langDetect.ts";
 import { MarkdownPreview } from "@features/documents/components/MarkdownPreview.tsx";
 import {
@@ -25,7 +25,7 @@ import {
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
 
 
-type PanelMode = "editor" | "split" | "preview";
+type PanelMode = MdPanelMode;
 
 /** Lenguajes comunes de Monaco para el selector de resaltado (solo modo editor). */
 const MONACO_LANGUAGE_OPTIONS: { id: string; label: string }[] = [
@@ -298,11 +298,49 @@ interface EditorPanelProps {
  * Panel de edición con Monaco + preview opcional para Markdown.
  */
 export function EditorPanel({ tab, isDark }: EditorPanelProps) {
-  const { updateTabContent, saveTab, saveTempWithDialog } = useExplorerStore();
+  const {
+    updateTabContent,
+    saveTab,
+    saveTempWithDialog,
+    mdViewModes,
+    setMdViewMode,
+    pushUndo,
+    undo,
+    redo,
+  } = useExplorerStore();
+  const monaco = useMonaco();
+  /** Evita registrar el contenido en undo cuando el cambio viene de undo/redo. */
+  const isUndoRedoRef = useRef(false);
   const isMarkdown = tab.ext === "md" || tab.ext === "mdx";
+  const isMdReal = isMarkdown && !!tab.path;
 
-  // Los archivos .md se abren en preview por defecto
-  const [mode, setMode] = useState<PanelMode>(() => isMarkdown ? "preview" : "editor");
+  // Tabs .md reales: modo y ratio desde el store (persistidos). Temporales: estado local.
+  const stored = mdViewModes[tab.id];
+  const [localMode, setLocalMode] = useState<PanelMode>("preview");
+  const [localSplitRatio, setLocalSplitRatio] = useState(0.5);
+  const mode: PanelMode = isMdReal
+    ? (stored?.mode ?? "preview")
+    : isMarkdown
+      ? localMode
+      : "editor";
+  const splitRatio = isMdReal ? (stored?.splitRatio ?? 0.5) : localSplitRatio;
+
+  const setMode = useCallback(
+    (m: PanelMode) => {
+      if (isMdReal) setMdViewMode(tab.id, m);
+      else if (isMarkdown) setLocalMode(m);
+    },
+    [isMdReal, isMarkdown, tab.id, setMdViewMode]
+  );
+
+  const setSplitRatioValue = useCallback(
+    (ratio: number) => {
+      if (isMdReal) setMdViewMode(tab.id, mode, ratio);
+      else setLocalSplitRatio(ratio);
+    },
+    [isMdReal, tab.id, mode, setMdViewMode]
+  );
+
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   /** Override de lenguaje por tab (solo modo editor). */
   const [languageOverrides, setLanguageOverrides] = useState<Record<string, string>>({});
@@ -317,16 +355,14 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   // Aplicar configuración sin diagnósticos
   useMonacoNoDiagnostics();
 
-  // Al cambiar de tab: resetear modo y enfocar el editor si corresponde
+  // Al cambiar de tab (solo no-reales): resetear modo local y enfocar editor si aplica
   useEffect(() => {
-    const newMode: PanelMode = isMarkdown ? "preview" : "editor";
-    setMode(newMode);
-    if (newMode !== "preview") {
-      // Pequeño delay para que Monaco haya re-renderizado con el nuevo modelo
+    if (!isMdReal && isMarkdown) setLocalMode("preview");
+    if (mode !== "preview") {
       const t = setTimeout(() => editorRef.current?.focus(), 80);
       return () => clearTimeout(t);
     }
-  }, [tab.id, isMarkdown]);
+  }, [tab.id, isMarkdown, isMdReal]);
 
   // Foco automático al cambiar a un modo que muestra el editor
   useEffect(() => {
@@ -362,15 +398,43 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     return () => window.removeEventListener("keydown", handler);
   }, [tab.id, tab.isTemp, tab.isDirty, saveTab, saveTempWithDialog]);
 
-  const handleChange = useCallback((value: string | undefined) => {
-    updateTabContent(tab.id, value ?? "");
-  }, [tab.id, updateTabContent]);
+  const handleChange = useCallback(
+    (value: string | undefined) => {
+      if (isUndoRedoRef.current) {
+        isUndoRedoRef.current = false;
+        return;
+      }
+      pushUndo(tab.id, tab.content);
+      updateTabContent(tab.id, value ?? "");
+    },
+    [tab.id, tab.content, updateTabContent, pushUndo]
+  );
 
-  const handleEditorMount = useCallback((ed: editor.IStandaloneCodeEditor) => {
-    editorRef.current = ed;
-    // Foco automático al abrir un archivo o nota
-    ed.focus();
-  }, []);
+  const handleEditorMount = useCallback(
+    (ed: editor.IStandaloneCodeEditor) => {
+      editorRef.current = ed;
+      ed.focus();
+
+      const m = monaco as unknown as { KeyMod: { CtrlCmd: number }; KeyCode: { KEY_Z: number; KEY_Y: number } };
+      if (m?.KeyMod && m?.KeyCode) {
+        const runUndo = () => {
+          const activeId = useExplorerStore.getState().activeTabId;
+          if (!activeId) return;
+          isUndoRedoRef.current = true;
+          useExplorerStore.getState().undo(activeId);
+        };
+        const runRedo = () => {
+          const activeId = useExplorerStore.getState().activeTabId;
+          if (!activeId) return;
+          isUndoRedoRef.current = true;
+          useExplorerStore.getState().redo(activeId);
+        };
+        ed.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KEY_Z, runUndo);
+        ed.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KEY_Y, runRedo);
+      }
+    },
+    [monaco]
+  );
 
   const monacoTheme = isDark ? "vs-dark" : "vs";
   /** Monaco: vue→html; typescriptreact/jsxreact no tienen tokenizer propio, usamos typescript/javascript. */
@@ -477,9 +541,11 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     />
   );
 
-  const [splitRatio, setSplitRatio] = useState(0.5);
+  /** Ratio temporal mientras se arrastra el divisor; al soltar se persiste. */
+  const [draggingRatio, setDraggingRatio] = useState<number | null>(null);
   const [draggingSplit, setDraggingSplit] = useState(false);
   const splitContainerRef = useRef<HTMLDivElement>(null);
+  const effectiveSplitRatio = draggingRatio ?? splitRatio;
 
   const handleSplitMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -494,19 +560,26 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
       const rect = el.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const ratio = Math.max(0.2, Math.min(0.8, x));
-      setSplitRatio(ratio);
+      setDraggingRatio(ratio);
     };
-    const onUp = () => setDraggingSplit(false);
+    const onUp = () => {
+      if (draggingRatio !== null) {
+        if (isMdReal) setSplitRatioValue(draggingRatio);
+        else if (isMarkdown) setLocalSplitRatio(draggingRatio);
+      }
+      setDraggingRatio(null);
+      setDraggingSplit(false);
+    };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [draggingSplit]);
+  }, [draggingSplit, draggingRatio, isMdReal, isMarkdown, setSplitRatioValue]);
 
-  const editorFlex = mode === "split" ? splitRatio : 1;
-  const previewFlex = mode === "split" ? 1 - splitRatio : 1;
+  const editorFlex = mode === "split" ? effectiveSplitRatio : 1;
+  const previewFlex = mode === "split" ? 1 - effectiveSplitRatio : 1;
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

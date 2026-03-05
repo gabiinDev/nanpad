@@ -146,6 +146,17 @@ La primera vez que ejecutes `tauri build` puede tardar más porque compila Rust 
 - **Migraciones:** Al arrancar, se ejecuta `runMigrations(db)` desde el Composition Root (`App.tsx`): se crea la tabla `schema_version` y se aplican las migraciones pendientes (p. ej. la 001 con el esquema inicial). Todo con `CREATE TABLE IF NOT EXISTS`, así que es seguro en la primera ejecución.
 - **Seed:** En el proyecto **no hay seed** que rellene datos iniciales (categorías por defecto, tareas de ejemplo, etc.). La base queda vacía tras las migraciones. Si querés datos básicos al primer arranque, se puede añadir un paso opcional “seed” que se ejecute una sola vez (por ejemplo, si `schema_version` está recién creado o si no hay categorías).
 
+### Dónde se guardan la DB y los temporales (modo desarrollo)
+
+En desarrollo (`pnpm dev` con Tauri), todo se escribe en carpetas de datos de la aplicación. El **identifier** del proyecto es `com.nanpad-app` (en `nanpad-app/src-tauri/tauri.conf.json`).
+
+| Qué | Dónde (en desarrollo) |
+|-----|------------------------|
+| **Base de datos** (`sqlite:nanpad.db`) | El plugin usa **BaseDirectory::AppConfig**. En **Windows**: `C:\Users\<usuario>\AppData\Roaming\com.nanpad-app\nanpad.db`. En **macOS**: `~/Library/Application Support/com.nanpad-app/nanpad.db`. En **Linux**: `~/.config/com.nanpad-app/nanpad.db`. No se crea dentro del proyecto ni en `target/debug`. |
+| **Notas temporales** (explorador) | **AppLocalData** + `nanpad/temp`. En **Windows**: `C:\Users\<usuario>\AppData\Local\com.nanpad-app\nanpad\temp\`. En **macOS**: `~/Library/Application Support/com.nanpad-app/nanpad/temp/`. En **Linux**: `~/.local/share/com.nanpad-app/nanpad/temp/`. |
+
+Para ver la ruta real en runtime: en la consola de DevTools ejecutá `(await import('@tauri-apps/api/path')).appLocalDataDir()`.
+
 ---
 
 ## Estructura del repositorio

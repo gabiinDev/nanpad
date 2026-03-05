@@ -58,6 +58,7 @@ import {
   faCopy,
   faScissors,
   faPaste,
+  faCircleQuestion,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faSquare,
@@ -210,6 +211,7 @@ export const IconSplitMode   = fa(faColumns);
 export const IconPreviewMode = fa(faEye);
 /** Búsqueda / lupa */
 export const IconSearch = fa(faMagnifyingGlass);
+export const IconHelp = fa(faCircleQuestion);
 
 /* ── Spinner ─────────────────────────────────────────────────── */
 /** Indicador de carga (animado vía Tailwind spin) */
@@ -225,29 +227,15 @@ export const IconSpinner = ({ className = "", size = 18 }: IconProps) => (
 /* ── Logo NANPAD ─────────────────────────────────────────────── */
 /**
  * Logo de NANPAD.
- * Usa un SVG custom ya que FontAwesome free no tiene un ícono "N" cuadrado.
+ * Usa el icono de la app (copia de src-tauri/icons en public/logo.png).
  */
 export const IconLogo = ({ className = "", size = 24 }: IconProps) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
+  <img
+    src="/logo.png"
+    alt=""
     width={size}
     height={size}
-    viewBox="0 0 24 24"
-    fill="currentColor"
     className={className}
     aria-hidden="true"
-  >
-    <rect x="1" y="1" width="22" height="22" rx="5" />
-    <text
-      x="12"
-      y="17"
-      textAnchor="middle"
-      fontSize="13"
-      fontWeight="800"
-      fill="var(--color-surface)"
-      fontFamily="'JetBrains Mono', monospace"
-    >
-      N
-    </text>
-  </svg>
+  />
 );

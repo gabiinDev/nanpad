@@ -3,9 +3,12 @@
  * Sidebar ultra-thin con indicador de ruta animado + header minimalista.
  */
 
+import { useEffect } from "react";
 import type { AppRoute } from "./router.ts";
 import { useRouteStore } from "@/store/useRouteStore.ts";
 import { useTheme } from "./useTheme.ts";
+import { useApp } from "@app/AppContext.tsx";
+import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
 import {
   IconHome,
   IconTasks,
@@ -21,7 +24,10 @@ import ExplorerPage from "@features/explorer/ExplorerPage.tsx";
 import SettingsPage from "@features/settings/SettingsPage.tsx";
 import { ExplorerSearchBar } from "@features/explorer/components/ExplorerSearchBar.tsx";
 import { useExplorerStore } from "@/store/useExplorerStore.ts";
+import { loadAllTempFiles } from "@/infrastructure/FsService.ts";
+import { homeDir } from "@tauri-apps/api/path";
 import { IconPlus } from "@ui/icons/index.tsx";
+import { HelpFloating } from "@features/help/HelpFloating.tsx";
 
 interface NavItem {
   route: AppRoute;
@@ -43,15 +49,79 @@ const ROUTE_META: Record<AppRoute, { label: string; sub: string }> = {
   settings:  { label: "ajustes",    sub: "sistema" },
 };
 
+/** Indica si el foco está en un control editable (input, textarea, contenteditable o Monaco). */
+function isEditableFocused(): boolean {
+  const el = document.activeElement;
+  if (!el || !(el instanceof HTMLElement)) return false;
+  const tag = el.tagName;
+  if (tag === "INPUT") {
+    const type = (el as HTMLInputElement).type?.toLowerCase();
+    const textLike = ["text", "search", "email", "url", "number", "password"].includes(type);
+    return textLike;
+  }
+  if (tag === "TEXTAREA") return true;
+  if (el.isContentEditable) return true;
+  const role = el.getAttribute("role");
+  if (role === "textbox" || role === "searchbox") return true;
+  if (el.closest(".monaco-editor") ?? el.closest("[data-monaco-editor]")) return true;
+  return false;
+}
+
+const SHORTCUT_TO_ROUTE: Record<string, AppRoute> = {
+  h: "home",
+  t: "tasks",
+  e: "documents",
+  s: "settings",
+};
+
 /**
  * Shell principal de la aplicación.
  */
 export default function Shell() {
+  const uc = useApp();
   const { route, setRoute } = useRouteStore();
   const theme = useTheme();
   const isDark = theme.theme === "dark";
   const createTempTab = useExplorerStore((s) => s.createTempTab);
   const meta = ROUTE_META[route];
+  const showHelpIcon = useAppSettingsStore((s) => s.show_help_icon);
+
+  // Hidratar preferencias desde DB al montar
+  useEffect(() => {
+    if (!uc) return;
+    void useAppSettingsStore.getState().load(uc);
+  }, [uc]);
+
+  // Inicializar explorador al arrancar (tabs + temporales) para que Home muestre docs abiertos correctamente
+  useEffect(() => {
+    if (!uc) return;
+    const { initialized, init } = useExplorerStore.getState();
+    if (initialized) return;
+    (async () => {
+      const [metas, home, session] = await Promise.all([
+        loadAllTempFiles(),
+        homeDir(),
+        uc.loadExplorerSession(),
+      ]);
+      await init(metas, home, session ?? undefined);
+    })();
+  }, [uc]);
+
+  // Atajos H / T / E / S: navegar solo si no se está escribiendo en un campo o editor
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const key = e.key?.toLowerCase();
+      const routeTo = key ? SHORTCUT_TO_ROUTE[key] : undefined;
+      if (!routeTo) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.shiftKey && key !== "s") return;
+      if (isEditableFocused()) return;
+      e.preventDefault();
+      setRoute(routeTo);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setRoute]);
 
   return (
     <div
@@ -210,6 +280,7 @@ export default function Shell() {
           {route === "settings"  && <SettingsPage theme={theme} />}
         </div>
       </main>
+      {showHelpIcon && <HelpFloating visible={showHelpIcon} />}
     </div>
   );
 }

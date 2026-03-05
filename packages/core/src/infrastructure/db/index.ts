@@ -24,7 +24,14 @@ export async function runMigrations(db: IDatabase): Promise<void> {
   );
   const currentVersion: number = rows[0]?.version ?? 0;
 
-  const migrations: MigrationFn[] = [migration001];
+  const migrations: MigrationFn[] = [
+    migration001,
+    migration002,
+    migration003,
+    migration004,
+    migration005,
+    migration006,
+  ];
 
   for (let i = currentVersion; i < migrations.length; i++) {
     await migrations[i](db);
@@ -136,4 +143,79 @@ async function migration001(db: IDatabase): Promise<void> {
   for (const sql of statements) {
     await db.execute(sql);
   }
+}
+
+/**
+ * Migración 002: Sesión del explorador de archivos (tabs reales abiertos + tab activo).
+ * Una sola fila; evita usar localStorage para esta sesión.
+ */
+async function migration002(db: IDatabase): Promise<void> {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS explorer_session (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      real_tab_ids TEXT NOT NULL DEFAULT '[]',
+      active_tab_id TEXT,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (2)`);
+}
+
+/**
+ * Migración 003: Modo de vista por tab para .md (editor / dividido / vista previa) y ratio del split.
+ * Idempotente: solo añade la columna si no existe (evita "duplicate column name").
+ */
+async function migration003(db: IDatabase): Promise<void> {
+  const existing = await db.select<{ name: string }[]>(
+    "SELECT name FROM pragma_table_info('explorer_session') WHERE name = 'md_view_modes'"
+  );
+  if (existing.length === 0) {
+    await db.execute(`
+      ALTER TABLE explorer_session ADD COLUMN md_view_modes TEXT DEFAULT '{}'
+    `);
+  }
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (3)`);
+}
+
+/**
+ * Migración 004: Pila de últimos tabs cerrados (Ctrl+Shift+Z).
+ */
+async function migration004(db: IDatabase): Promise<void> {
+  const existing = await db.select<{ name: string }[]>(
+    "SELECT name FROM pragma_table_info('explorer_session') WHERE name = 'closed_tabs_stack'"
+  );
+  if (existing.length === 0) {
+    await db.execute(`
+      ALTER TABLE explorer_session ADD COLUMN closed_tabs_stack TEXT DEFAULT '[]'
+    `);
+  }
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (4)`);
+}
+
+/**
+ * Migración 005: Sesión de undo/redo de tareas (pilas con tope 5).
+ */
+async function migration005(db: IDatabase): Promise<void> {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS task_undo_session (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      undo_stack TEXT NOT NULL DEFAULT '[]',
+      redo_stack TEXT NOT NULL DEFAULT '[]',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (5)`);
+}
+
+/**
+ * Migración 006: Preferencias de app (tema, high performance, vista por defecto tareas, icono ayuda).
+ */
+async function migration006(db: IDatabase): Promise<void> {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL DEFAULT ''
+    )
+  `);
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (6)`);
 }

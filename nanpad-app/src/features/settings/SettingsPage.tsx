@@ -4,10 +4,11 @@
  */
 
 import { useState, useRef } from "react";
-import { IconMoon, IconSun, IconZap } from "@ui/icons/index.tsx";
+import { IconMoon, IconSun, IconZap, IconHelp } from "@ui/icons/index.tsx";
 import type { ThemeState } from "@app/useTheme.ts";
 import { useApp } from "@app/AppContext.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
+import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
 
 interface SettingsPageProps {
   theme: ThemeState;
@@ -15,6 +16,10 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ theme }: SettingsPageProps) {
   const uc = useApp();
+  const showHelpIcon = useAppSettingsStore((s) => s.show_help_icon);
+  const defaultTaskView = useAppSettingsStore((s) => s.default_task_view);
+  const setShowHelpIcon = useAppSettingsStore((s) => s.setShowHelpIcon);
+  const setDefaultTaskView = useAppSettingsStore((s) => s.setDefaultTaskView);
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
@@ -70,10 +75,11 @@ export default function SettingsPage({ theme }: SettingsPageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-lg p-8">
-      <h1 className="mb-8 text-xl font-semibold text-[var(--color-text-primary)]">
-        Ajustes
-      </h1>
+    <div className="h-full min-h-0 overflow-y-auto">
+      <div className="mx-auto max-w-lg p-8 pb-16">
+        <h1 className="mb-8 text-xl font-semibold text-[var(--color-text-primary)]">
+          Ajustes
+        </h1>
 
       {/* Mensaje de estado */}
       {message && (
@@ -116,7 +122,7 @@ export default function SettingsPage({ theme }: SettingsPageProps) {
                 onClick={() => { theme.setTheme(t); }}
                 className={`flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   theme.theme === t
-                    ? "bg-[var(--color-accent)] text-white"
+                    ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)]"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-active)]"
                 }`}
               >
@@ -144,15 +150,74 @@ export default function SettingsPage({ theme }: SettingsPageProps) {
             aria-checked={theme.highPerf}
             onClick={theme.toggleHighPerf}
             className={`relative h-6 w-11 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-              theme.highPerf ? "bg-[var(--color-accent)]" : "bg-[var(--color-border-strong)]"
+              theme.highPerf ? "bg-[var(--color-accent)]" : "bg-[var(--color-switch-track-off)]"
             }`}
           >
             <span
-              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                theme.highPerf ? "translate-x-5" : "translate-x-0"
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full shadow transition-transform ${
+                theme.highPerf
+                  ? "translate-x-5 bg-[var(--color-accent-foreground)]"
+                  : "translate-x-0 bg-[var(--color-switch-thumb-off)]"
               }`}
             />
           </button>
+        </div>
+      </section>
+
+      {/* ─── Ayuda y preferencias ─────────────────────────────────────────── */}
+      <section className="mb-8">
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-[var(--color-text-muted)]">
+          Ayuda y preferencias
+        </h2>
+
+        {/* Icono de ayuda flotante */}
+        <div className="mb-3 flex items-center justify-between gap-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <IconHelp size={16} className="shrink-0 text-[var(--color-text-muted)]" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">Mostrar icono de ayuda</p>
+              <p className="text-xs text-[var(--color-text-muted)]">Icono flotante (arriba a la derecha) con atajos e interacciones por pantalla</p>
+            </div>
+          </div>
+          <button
+            role="switch"
+            aria-checked={showHelpIcon}
+            onClick={() => { void setShowHelpIcon(uc, !showHelpIcon); }}
+            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              showHelpIcon ? "bg-[var(--color-accent)]" : "bg-[var(--color-switch-track-off)]"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full shadow transition-transform ${
+                showHelpIcon
+                  ? "translate-x-5 bg-[var(--color-accent-foreground)]"
+                  : "translate-x-0 bg-[var(--color-switch-thumb-off)]"
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Vista por defecto Tareas */}
+        <div className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">Vista por defecto (Tareas)</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Al abrir Tareas se mostrará esta vista</p>
+          </div>
+          <div className="flex gap-0.5 rounded-md border border-[var(--color-border)] p-0.5">
+            {(["list", "kanban"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => { void setDefaultTaskView(uc, v); }}
+                className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  defaultTaskView === v
+                    ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-active)]"
+                }`}
+              >
+                {v === "list" ? "Lista" : "Kanban"}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -232,6 +297,7 @@ export default function SettingsPage({ theme }: SettingsPageProps) {
           <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">v0.1.0 · Workspace local · 100% offline</p>
         </div>
       </section>
+      </div>
     </div>
   );
 }

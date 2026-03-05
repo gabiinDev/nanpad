@@ -31,8 +31,12 @@
   /* Acento — shadcn dark usa --primary = oklch(0.929 0.013 255.508)
      que es un gris-blanco slate muy suave, NO azul eléctrico. */
   --color-accent:        oklch(0.929 0.013 255.508);    /* --primary dark */
+  --color-accent-foreground: oklch(0.18 0.02 265);      /* texto sobre acento (oscuro) */
   --color-accent-hover:  oklch(0.984 0.003 247.858);    /* --foreground */
   --color-accent-subtle: oklch(0.929 0.013 255.508 / 10%);
+  /* Switch off: track y thumb menos brillantes en oscuro */
+  --color-switch-track-off: oklch(0.25 0.02 265);
+  --color-switch-thumb-off: oklch(0.55 0.02 265);
 
   /* Prioridades */
   --color-priority-low:      oklch(0.551 0.027 264.364);
@@ -76,8 +80,11 @@
 
   /* Acento — shadcn light: --primary = casi negro slate */
   --color-accent:        oklch(0.208 0.042 265.755);    /* --primary light */
+  --color-accent-foreground: oklch(0.984 0.003 247.858); /* texto sobre acento (claro) */
   --color-accent-hover:  oklch(0.129 0.042 264.695);
   --color-accent-subtle: oklch(0.968 0.007 247.896);
+  --color-switch-track-off: oklch(0.929 0.013 255.508);
+  --color-switch-thumb-off: oklch(1 0 0);
 
   /* Prioridades */
   --color-priority-low:      oklch(0.704 0.04 256.788);
@@ -129,6 +136,16 @@
 }
 .dropdown-enter   { animation: dropdownEnter 0.18s ease-out both; }
 .dropdown-exit    { animation: dropdownExit  0.12s ease-in both; }
+
+/* Icono de ayuda flotante: efecto heartbeat (intervalos prolongados) */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  18%      { transform: scale(1.08); }
+  36%      { transform: scale(1); }
+  54%      { transform: scale(1.06); }
+  78%      { transform: scale(1); }
+}
+.animate-heartbeat { animation: heartbeat 2.8s ease-in-out infinite; }
 
 /* Mermaid: placeholder mientras carga y fade-in al mostrar el diagrama */
 .mermaid-diagram {

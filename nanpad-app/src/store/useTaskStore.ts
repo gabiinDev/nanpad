@@ -62,7 +62,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   allTasks: [],
   filters: {},
-  view: "list",
+  view: "kanban",
   loading: false,
   error: null,
 

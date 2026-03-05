@@ -313,21 +313,15 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
           onDoubleClick={handleDoubleClick}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, node); }}
           title={isOpen && !isPinned ? `${node.name} (vista previa — doble click para fijar)` : node.path}
+          className="flex min-h-[2.75rem] cursor-pointer select-none items-center gap-1.5 rounded-md text-[0.8125rem] outline-none transition-colors duration-150"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "5px",
-            padding: "3px 8px 3px 0",
             paddingLeft: `${indent + 8}px`,
-            cursor: "pointer",
-            borderRadius: "4px",
+            paddingRight: "0.5rem",
+            paddingTop: "0.1875rem",
+            paddingBottom: "0.1875rem",
             background: showActiveStyle ? "var(--color-surface-hover)" : "transparent",
             color: showActiveStyle ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-            userSelect: "none",
-            fontSize: "13px",
-            transition: "background 0.1s ease, color 0.1s ease",
             fontWeight: showActiveStyle ? 500 : 400,
-            outline: "none",
           }}
           onMouseEnter={(e) => {
             if (!showActiveStyle) (e.currentTarget as HTMLElement).style.background = "color-mix(in oklch, var(--color-surface-hover) 60%, transparent)";
@@ -416,14 +410,8 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
 
           {node.children.length === 0 && !(inlineChild && inlineChild.type !== "rename" && inlineChild.parentPath === node.path) && (
             <div
-              style={{
-                paddingLeft: `${(depth + 1) * 14 + 22}px`,
-                fontSize: "12px",
-                color: "var(--color-text-muted)",
-                opacity: 0.45,
-                paddingTop: "2px",
-                paddingBottom: "2px",
-              }}
+              className="py-0.5 text-xs text-[var(--color-text-muted)] opacity-45"
+              style={{ paddingLeft: `${(depth + 1) * 14 + 22}px` }}
             >
               vacío
             </div>
@@ -548,70 +536,38 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
   }, [inlineAction, createNewFile, createNewDir, renameNode]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        background: "var(--color-surface-2)",
-        borderRight: "1px solid var(--color-border)",
-        overflow: "hidden",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 10px",
-          borderBottom: "1px solid var(--color-border)",
-          flexShrink: 0,
-        }}
-      >
-        <span
-          style={{
-            fontSize: "11px",
-            fontWeight: 600,
-            color: "var(--color-text-muted)",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-          }}
-        >
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-surface-2)]">
+      <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-border)] px-2.5 py-2">
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
           Explorador
         </span>
-        <div style={{ display: "flex", gap: "2px" }}>
-          <button title="Recargar árbol" onClick={() => void reloadTree()} style={iconBtnStyle}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)"; }}
+        <div className="flex gap-0.5">
+          <button
+            type="button"
+            title="Recargar árbol"
+            onClick={() => void reloadTree()}
+            className={iconBtnClass}
           >
             <IconRefresh size={12} />
           </button>
-          <button title="Cambiar carpeta raíz" onClick={onOpenFolderDialog} style={iconBtnStyle}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)"; }}
+          <button
+            type="button"
+            title="Cambiar carpeta raíz"
+            onClick={onOpenFolderDialog}
+            className={iconBtnClass}
           >
             <IconFolder size={12} />
           </button>
         </div>
       </div>
 
-      {/* Árbol */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "4px 0" }}>
+      <div className="min-h-0 flex-1 overflow-y-auto py-1">
         {loadingTree ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
+          <div className="flex justify-center py-5">
             <IconSpinner size={16} />
           </div>
         ) : tree.length === 0 ? (
-          <div
-            style={{
-              padding: "20px 12px",
-              textAlign: "center",
-              fontSize: "12px",
-              color: "var(--color-text-muted)",
-              opacity: 0.6,
-            }}
-          >
+          <div className="px-3 py-5 text-center text-xs text-[var(--color-text-muted)] opacity-60">
             Carpeta vacía
           </div>
         ) : (
@@ -665,16 +621,6 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
   );
 }
 
-const iconBtnStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: "22px",
-  height: "22px",
-  borderRadius: "4px",
-  border: "none",
-  background: "transparent",
-  color: "var(--color-text-muted)",
-  cursor: "pointer",
-  transition: "background 0.1s ease, color 0.1s ease",
-};
+/** Botones del header del FileTree: área táctil mínima 44px */
+const iconBtnClass =
+  "flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-md border-none bg-transparent text-[var(--color-text-muted)] transition-colors duration-150 hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]";

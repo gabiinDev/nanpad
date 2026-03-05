@@ -55,6 +55,9 @@ import {
   faEye,
   faMagnifyingGlass,
   faHouse,
+  faCopy,
+  faScissors,
+  faPaste,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faSquare,
@@ -133,6 +136,12 @@ export const IconMenu    = fa(faEllipsisVertical);
 export const IconUpload  = fa(faUpload);
 /** Descargar */
 export const IconDownload = fa(faDownload);
+/** Copiar */
+export const IconCopy = fa(faCopy);
+/** Cortar */
+export const IconCut = fa(faScissors);
+/** Pegar */
+export const IconPaste = fa(faPaste);
 
 /* ── Estados de tarea ────────────────────────────────────────── */
 /** Check / completado */

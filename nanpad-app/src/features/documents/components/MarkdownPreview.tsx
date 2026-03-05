@@ -1,6 +1,7 @@
 /**
  * Preview de Markdown con soporte Mermaid.
  * Usa marked para el render HTML y mermaid para diagramas.
+ * Los diagramas Mermaid se reservan con placeholder y se muestran al terminar para evitar salto visual.
  */
 
 import { useEffect, useRef } from "react";
@@ -13,6 +14,12 @@ interface MarkdownPreviewProps {
 }
 
 let mermaidInitialized = false;
+
+function escapeHtml(text: string): string {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 function ensureMermaid(isDark: boolean) {
   if (!mermaidInitialized) {
@@ -28,6 +35,7 @@ function ensureMermaid(isDark: boolean) {
 /**
  * Componente de preview de Markdown.
  * Detecta bloques ```mermaid y los renderiza como diagramas SVG.
+ * Usa placeholder con altura mínima y fade-in al cargar para evitar el salto al renderizar.
  */
 export function MarkdownPreview({ content, className = "" }: MarkdownPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,19 +50,28 @@ export function MarkdownPreview({ content, className = "" }: MarkdownPreviewProp
     const html = marked.parse(content, { async: false }) as string;
     containerRef.current.innerHTML = html;
 
-    // Encontrar y renderizar bloques Mermaid
+    // Encontrar bloques Mermaid (el nodo es <code>, el contenedor a reemplazar es <pre>)
     const mermaidBlocks = containerRef.current.querySelectorAll("code.language-mermaid");
     mermaidBlocks.forEach(async (block, i) => {
       const code = block.textContent ?? "";
+      const pre = block.closest("pre");
+      if (!pre) return;
+
       const id = `mermaid-${Date.now()}-${i}`;
+      const wrapper = document.createElement("div");
+      wrapper.className = "mermaid-diagram mermaid-diagram--loading my-4";
+      wrapper.setAttribute("aria-busy", "true");
+      pre.replaceWith(wrapper);
+
       try {
         const { svg } = await mermaid.render(id, code);
-        const wrapper = document.createElement("div");
-        wrapper.className = "mermaid-diagram my-4";
         wrapper.innerHTML = svg;
-        block.parentElement?.replaceWith(wrapper);
+        wrapper.classList.remove("mermaid-diagram--loading");
+        wrapper.setAttribute("aria-busy", "false");
       } catch {
-        // Si falla el render, dejar el bloque de código original
+        wrapper.innerHTML = `<pre class="rounded-lg bg-[var(--color-surface-active)] p-4 text-sm text-[var(--color-text-muted)]"><code>${escapeHtml(code)}</code></pre>`;
+        wrapper.classList.remove("mermaid-diagram--loading");
+        wrapper.setAttribute("aria-busy", "false");
       }
     });
   }, [content]);

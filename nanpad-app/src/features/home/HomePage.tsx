@@ -63,96 +63,36 @@ export default function HomePage() {
   );
 
   return (
-    <div
-      className="flex h-full overflow-auto"
-      style={{ background: "var(--color-surface)" }}
-    >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-          padding: "24px 32px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "32px",
-        }}
-      >
+    <div className="flex h-full overflow-auto bg-[var(--color-surface)]">
+      <div className="mx-auto flex w-full max-w-[56.25rem] flex-col gap-6 px-4 py-6 sm:px-6 md:gap-8 md:px-8 md:py-8">
         {/* Tareas por hacer / en progreso */}
         <section>
-          <h2
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "var(--color-text-muted)",
-              marginBottom: "12px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             <IconTasks size={14} />
             Tareas recientes
           </h2>
           {loading ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "16px 0" }}>
+            <div className="flex items-center gap-2 py-4">
               <Spinner />
-              <span style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
-                Cargando…
-              </span>
+              <span className="text-[0.8125rem] text-[var(--color-text-muted)]">Cargando…</span>
             </div>
           ) : tasks.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "var(--color-text-muted)", padding: "12px 0" }}>
+            <p className="py-3 text-[0.8125rem] text-[var(--color-text-muted)]">
               No hay tareas por hacer o en progreso.
             </p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
+            <ul className="flex list-none flex-col gap-0.5 p-0 m-0">
               {tasks.map((task) => (
                 <li key={task.id}>
                   <button
                     type="button"
                     onClick={() => onTaskClick(task)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      border: "none",
-                      borderRadius: "8px",
-                      background: "transparent",
-                      color: "var(--color-text-primary)",
-                      cursor: "pointer",
-                      transition: "background 0.12s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "transparent";
-                    }}
+                    className="flex w-full min-h-[2.75rem] items-center gap-2.5 rounded-lg border-none bg-transparent px-3.5 py-2.5 text-left text-[var(--color-text-primary)] transition-colors duration-150 hover:bg-[var(--color-surface-hover)]"
                   >
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 500,
-                        color: "var(--color-text-muted)",
-                        minWidth: "72px",
-                      }}
-                    >
+                    <span className="min-w-[4.5rem] text-[0.6875rem] font-medium text-[var(--color-text-muted)]">
                       {statusLabel[task.status] ?? task.status}
                     </span>
-                    <span
-                      style={{
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        fontSize: "14px",
-                      }}
-                    >
+                    <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                       {task.title}
                     </span>
                   </button>
@@ -164,46 +104,24 @@ export default function HomePage() {
 
         {/* Documentos abiertos */}
         <section>
-          <h2
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "14px",
-              fontWeight: 600,
-              color: "var(--color-text-muted)",
-              marginBottom: "12px",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             <IconDocument size={14} />
             Documentos abiertos
           </h2>
           {openTabs.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "var(--color-text-muted)", padding: "12px 0" }}>
+            <p className="py-3 text-[0.8125rem] text-[var(--color-text-muted)]">
               No hay archivos abiertos en el explorador.
             </p>
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
+            <ul className="flex list-none flex-col gap-0.5 p-0 m-0">
               {openTabs.slice(0, MAX_DOCS).map((tab) => (
                 <li key={tab.id}>
                   <button
                     type="button"
                     onClick={() => onDocClick(tab)}
+                    className="flex w-full min-h-[2.75rem] items-center gap-2.5 rounded-lg border-none px-3.5 py-2.5 text-left text-[var(--color-text-primary)] transition-colors duration-150 hover:bg-[var(--color-surface-hover)]"
                     style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "10px 14px",
-                      textAlign: "left",
-                      border: "none",
-                      borderRadius: "8px",
                       background: tab.id === activeTabId ? "var(--color-accent-subtle)" : "transparent",
-                      color: "var(--color-text-primary)",
-                      cursor: "pointer",
-                      transition: "background 0.12s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (tab.id !== activeTabId)
@@ -214,7 +132,7 @@ export default function HomePage() {
                         (e.currentTarget as HTMLElement).style.background = "transparent";
                     }}
                   >
-                    <span style={{ flexShrink: 0, color: "var(--color-text-muted)" }}>
+                    <span className="shrink-0 text-[var(--color-text-muted)]">
                       {tab.isTemp ? (
                         <IconNote size={14} />
                       ) : (
@@ -222,18 +140,12 @@ export default function HomePage() {
                       )}
                     </span>
                     <span
-                      style={{
-                        flex: 1,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        fontSize: "14px",
-                      }}
+                      className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm"
                       title={tab.path ?? tab.label}
                     >
                       {tab.label}
                       {tab.isDirty && !tab.isTemp && (
-                        <span style={{ color: "var(--color-priority-high)", marginLeft: "4px" }}>•</span>
+                        <span className="ml-1 text-[var(--color-priority-high)]">•</span>
                       )}
                     </span>
                   </button>

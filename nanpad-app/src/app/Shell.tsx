@@ -55,63 +55,41 @@ export default function Shell() {
 
   return (
     <div
-      className="flex h-full w-full overflow-hidden"
-      style={{ background: "var(--color-surface)" }}
+      className="flex h-full w-full overflow-hidden bg-[var(--color-surface)]"
       onContextMenu={(e) => { e.preventDefault(); }}
     >
-      {/* ─── Sidebar ultra-thin ───────────────────────────────────────── */}
+      {/* Sidebar: ancho fijo en rem, touch targets mínimos 44px */}
       <aside
-        style={{
-          width: "52px",
-          background: "var(--color-surface-2)",
-          borderRight: "1px solid var(--color-border)",
-          boxShadow: "var(--shadow-sm)",
-        }}
-        className="relative flex h-full flex-col items-center py-4 shrink-0"
+        className="relative flex h-full w-[3.25rem] shrink-0 flex-col items-center border-r border-[var(--color-border)] bg-[var(--color-surface-2)] py-4 shadow-[var(--shadow-sm)]"
       >
-        {/* Logo con glow pulsante al hover + tooltip */}
-        <div
-          className="group relative mb-6 flex items-center justify-center cursor-pointer"
-          style={{ color: "var(--color-accent)" }}
-        >
+        {/* Logo con glow al hover + tooltip */}
+        <div className="group relative mb-6 flex cursor-pointer items-center justify-center text-[var(--color-accent)]">
           <div className="transition-all duration-300 hover:scale-110 hover:drop-shadow-[0_0_8px_var(--color-accent)]">
             <IconLogo size={26} />
           </div>
           <span
-            className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-0.5 z-50"
-            style={{
-              fontSize: "13px",
-              background: "var(--color-surface-active)",
-              color: "var(--color-text-primary)",
-              border: "1px solid var(--color-border-strong)",
-              boxShadow: "var(--shadow-lg)",
-            }}
+            className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-active)] px-2.5 py-1.5 text-[0.8125rem] text-[var(--color-text-primary)] opacity-0 shadow-[var(--shadow-lg)] transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100"
           >
             Nanpad dice: ¡gracias por usarme! ❤️
           </span>
         </div>
 
-        {/* Navegación */}
-        <nav className="flex flex-1 flex-col items-center gap-1" aria-label="Navegación">
+        {/* Navegación: activo = borde izquierdo en el botón */}
+        <nav className="flex flex-1 flex-col items-center gap-0.5" aria-label="Navegación">
           {NAV_ITEMS.map(({ route: r, label, shortcut, Icon }) => {
             const active = route === r;
             return (
-              <div key={r} className="relative w-full flex justify-center items-center">
-                {/* Indicador activo — línea vertical izquierda */}
-                {active && (
-                  <span
-                    className="absolute left-0 w-0.5 h-6 rounded-r-full animate-fade-up"
-                    style={{ background: "var(--color-accent)", boxShadow: "0 0 8px var(--color-accent)" }}
-                  />
-                )}
+              <div key={r} className="flex w-full justify-center">
                 <button
+                  type="button"
                   onClick={() => { setRoute(r); }}
                   title={`${label} [${shortcut}]`}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className="group relative flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200"
+                  className="group relative flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-lg border-l-2 transition-all duration-200"
                   style={{
                     background: active ? "var(--color-accent-subtle)" : "transparent",
+                    borderLeftColor: active ? "var(--color-accent)" : "transparent",
                     color: active ? "var(--color-accent)" : "var(--color-text-muted)",
                   }}
                   onMouseEnter={(e) => {
@@ -128,22 +106,11 @@ export default function Shell() {
                   }}
                 >
                   <Icon size={16} />
-                  {/* Tooltip */}
                   <span
-                    className="pointer-events-none absolute left-full ml-3 whitespace-nowrap rounded-md px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-all duration-150 group-hover:translate-x-0.5 z-50"
-                    style={{
-                      fontSize: "13px",
-                      background: "var(--color-surface-active)",
-                      color: "var(--color-text-primary)",
-                      border: "1px solid var(--color-border-strong)",
-                      boxShadow: "var(--shadow-lg)",
-                    }}
+                    className="pointer-events-none absolute left-full z-50 ml-3 whitespace-nowrap rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface-active)] px-2.5 py-1.5 text-[0.8125rem] text-[var(--color-text-primary)] opacity-0 shadow-[var(--shadow-lg)] transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100"
                   >
                     {label}
-                    <span
-                      className="ml-2 rounded px-1"
-                      style={{ fontSize: "11px", background: "var(--color-surface)", color: "var(--color-text-muted)" }}
-                    >
+                    <span className="ml-2 rounded bg-[var(--color-surface)] px-1 text-[0.6875rem] text-[var(--color-text-muted)]">
                       {shortcut}
                     </span>
                   </span>
@@ -153,44 +120,29 @@ export default function Shell() {
           })}
         </nav>
 
-        {/* Acciones inferiores */}
-        <div className="flex flex-col items-center gap-1">
-          {/* Toggle tema */}
+        {/* Acciones inferiores: tema + ajustes (touch targets 44px) */}
+        <div className="flex flex-col items-center gap-0.5">
           <button
+            type="button"
             onClick={theme.toggleTheme}
             title={isDark ? "Modo claro" : "Modo oscuro"}
             aria-label={isDark ? "Modo claro" : "Modo oscuro"}
-            className="group relative flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200"
-            style={{ color: "var(--color-text-muted)" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--color-priority-high)";
-              (e.currentTarget as HTMLElement).style.background = "var(--color-surface-active)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-            }}
+            className="group relative flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-lg text-[var(--color-text-muted)] transition-all duration-200 hover:bg-[var(--color-surface-active)] hover:text-[var(--color-priority-high)]"
           >
-            <span className="transition-transform duration-300 group-hover:rotate-45 block">
+            <span className="block transition-transform duration-300 group-hover:rotate-45">
               {isDark ? <IconSun size={16} /> : <IconMoon size={16} />}
             </span>
           </button>
-
-          {/* Ajustes */}
-          <div className="relative w-full flex justify-center items-center">
-            {route === "settings" && (
-              <span
-                className="absolute left-0 w-0.5 h-6 rounded-r-full"
-                style={{ background: "var(--color-accent)", boxShadow: "0 0 8px var(--color-accent)" }}
-              />
-            )}
+          <div className="flex w-full justify-center">
             <button
+              type="button"
               onClick={() => { setRoute("settings"); }}
               title="Ajustes [S]"
               aria-label="Ajustes"
-              className="group relative flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200"
+              className="group relative flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-lg border-l-2 transition-all duration-200"
               style={{
                 background: route === "settings" ? "var(--color-accent-subtle)" : "transparent",
+                borderLeftColor: route === "settings" ? "var(--color-accent)" : "transparent",
                 color: route === "settings" ? "var(--color-accent)" : "var(--color-text-muted)",
               }}
               onMouseEnter={(e) => {
@@ -212,92 +164,46 @@ export default function Shell() {
         </div>
       </aside>
 
-      {/* ─── Área de contenido ───────────────────────────────────────── */}
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Header — breadcrumb + buscador contextual */}
+      {/* Área de contenido: layout fluid, responsive header */}
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header
-          className="flex h-10 shrink-0 items-center gap-4 px-5"
-          style={{
-            borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-surface-2)",
-          }}
+          className="flex h-11 shrink-0 flex-wrap items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 md:gap-4 md:px-5"
         >
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-1.5 shrink-0" style={{ fontSize: "13px" }}>
-            <span style={{ color: "var(--color-text-muted)" }}>nanpad /</span>
-            <span style={{ color: "var(--color-text-secondary)" }}>{meta.sub} /</span>
-            <span style={{ color: "var(--color-text-primary)", fontWeight: 500 }}>
-              {meta.label}
-            </span>
+          {/* Breadcrumb: oculto en ventanas muy estrechas */}
+          <div className="flex shrink-0 items-center gap-1.5 text-[0.8125rem]">
+            <span className="text-[var(--color-text-muted)]">nanpad /</span>
+            <span className="text-[var(--color-text-secondary)]">{meta.sub} /</span>
+            <span className="font-medium text-[var(--color-text-primary)]">{meta.label}</span>
           </div>
 
-          {/* Separador */}
-          <div
-            style={{
-              width: "1px",
-              height: "16px",
-              background: "var(--color-border)",
-              flexShrink: 0,
-            }}
-          />
+          <div className="h-4 w-px shrink-0 bg-[var(--color-border)]" />
 
-          {/* Zona explorador: botón Nueva nota a la izquierda del buscador (mismo estilo que Nueva tarea, menos alto) */}
-          <div className="flex flex-1 items-center min-w-0 gap-3">
+          {/* Zona explorador: botón + buscador, flex fluid */}
+          <div className="flex min-w-0 flex-1 basis-0 items-center gap-2 md:gap-3">
             {route === "documents" && (
               <button
                 type="button"
                 onClick={() => void createTempTab()}
                 title="Nueva nota temporal (Ctrl+N)"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "3px 12px",
-                  borderRadius: "7px",
-                  border: "1px solid var(--color-accent)",
-                  background: "var(--color-accent-subtle)",
-                  color: "var(--color-accent)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  const t = e.currentTarget as HTMLElement;
-                  t.style.background = "var(--color-surface-hover)";
-                  t.style.borderColor = "var(--color-accent)";
-                }}
-                onMouseLeave={(e) => {
-                  const t = e.currentTarget as HTMLElement;
-                  t.style.background = "var(--color-accent-subtle)";
-                  t.style.borderColor = "var(--color-accent)";
-                }}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition-all duration-150 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-hover)]"
               >
                 <IconPlus size={12} />
                 <span>Nueva nota</span>
               </button>
             )}
-            {/* Buscador centrado en el espacio restante */}
-            <div className="flex flex-1 items-center justify-center min-w-0">
+            <div className="flex min-w-0 flex-1 items-center justify-center">
               {route === "documents" && <ExplorerSearchBar />}
             </div>
           </div>
 
-          {/* Indicador de estado */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: "var(--color-status-done)" }}
-            />
-            <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-              activo
-            </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-status-done)]" />
+            <span className="text-xs text-[var(--color-text-muted)]">activo</span>
           </div>
         </header>
 
-        {/* Vista activa con animación al cambiar */}
-        <div key={route} className="animate-fade-up flex-1 overflow-hidden">
+        {/* Vista activa: min-h-0 para que el contenido no desborde (scroll interno correcto) */}
+        <div key={route} className="animate-fade-up min-h-0 flex-1 overflow-hidden">
           {route === "home"      && <HomePage />}
           {route === "tasks"     && <TasksPage />}
           {route === "documents" && <ExplorerPage isDark={isDark} />}

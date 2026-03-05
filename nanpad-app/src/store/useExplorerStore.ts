@@ -101,6 +101,8 @@ interface ExplorerStore {
   // ── Acciones de tabs ───────────────────────────────────────────────────────
   /** Activa un tab existente. */
   setActiveTab: (id: string) => void;
+  /** Reordena los tabs: mueve el tab en fromIndex a toIndex. */
+  reorderTabs: (fromIndex: number, toIndex: number) => void;
   /**
    * Cierra un tab.
    * - Archivo real con cambios sin guardar: pide confirmación.
@@ -427,6 +429,18 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
 
   setActiveTab: (id) => {
     set({ activeTabId: id });
+  },
+
+  reorderTabs: (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    set((state) => {
+      const tabs = [...state.openTabs];
+      const [removed] = tabs.splice(fromIndex, 1);
+      if (!removed) return state;
+      const insertIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+      tabs.splice(insertIndex, 0, removed);
+      return { openTabs: tabs };
+    });
   },
 
   closeTab: async (id) => {

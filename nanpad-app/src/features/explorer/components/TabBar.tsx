@@ -186,14 +186,22 @@ function TabIcon({ tab }: { tab: OpenTab }) {
   return <ExplorerFileIcon ext={tab.ext} size={12} />;
 }
 
-// ── Tab individual ─────────────────────────────────────────────────────────────
+// ── Tab individual (draggable para reordenar) ──────────────────────────────────
 
 interface TabProps {
   tab: OpenTab;
+  index: number;
   isActive: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
   onActivate: () => void;
   onClose: () => void;
   onSaveToDisk: () => void;
+  onDragStart: (index: number) => void;
+  onDragOver: (index: number) => void;
+  onDragLeave: () => void;
+  onDrop: (toIndex: number) => void;
+  onDragEnd: () => void;
   maxWidth: number;
 }
 
@@ -205,29 +213,44 @@ function getTabMaxWidth(tabCount: number): number {
   return Math.max(90, 200 - tabCount * 8);
 }
 
-function Tab({ tab, isActive, onActivate, onClose, onSaveToDisk, maxWidth }: TabProps) {
+function Tab({
+  tab,
+  index,
+  isActive,
+  isDragging,
+  isDropTarget,
+  onActivate,
+  onClose,
+  onSaveToDisk,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+  maxWidth,
+}: TabProps) {
   return (
     <div
+      role="tab"
+      draggable
+      onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(index)); e.dataTransfer.effectAllowed = "move"; onDragStart(index); }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver(index); }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => { e.preventDefault(); onDrop(index); }}
+      onDragEnd={onDragEnd}
+      className={`flex h-full min-w-[3.75rem] shrink-0 items-center gap-1.5 border-r border-[var(--color-border)] pl-2.5 pr-1 transition-all duration-150 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "5px",
-        padding: "0 4px 0 10px",
-        height: "100%",
-        flexShrink: 0,
         maxWidth: `${maxWidth}px`,
-        minWidth: "60px",
-        cursor: "pointer",
-        borderRight: "1px solid var(--color-border)",
         background: isActive ? "var(--color-surface)" : "transparent",
         borderBottom: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",
         color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
-        transition: "background 0.1s ease, color 0.1s ease",
+        opacity: isDragging ? 0.5 : 1,
+        boxShadow: isDropTarget ? "inset 0 0 0 2px var(--color-accent)" : undefined,
       }}
       onClick={onActivate}
       onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }}
       onAuxClick={(e) => { if (e.button === 1) { e.preventDefault(); onClose(); } }}
-      title={tab.path ?? tab.label}
+      title={`${tab.path ?? tab.label} — arrastrá para reordenar`}
     >
       <span
         style={{
@@ -239,54 +262,35 @@ function Tab({ tab, isActive, onActivate, onClose, onSaveToDisk, maxWidth }: Tab
       </span>
 
       <span
+        className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.8125rem]"
         style={{
-          fontSize: "13px",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          flex: 1,
           fontStyle: !tab.isTemp && !tab.isPinned ? "italic" : "normal",
           opacity: !tab.isTemp && !tab.isPinned ? 0.75 : 1,
         }}
       >
         {tab.label}
         {tab.isDirty && !tab.isTemp && (
-          <span style={{ color: "var(--color-priority-high)", marginLeft: "3px" }}>•</span>
+          <span className="ml-0.5 text-[var(--color-priority-high)]">•</span>
         )}
       </span>
 
       {/* Guardar en disco (solo temporales — acceso directo sin cerrar) */}
       {tab.isTemp && (
         <button
+          type="button"
           title="Guardar en disco sin cerrar"
           onClick={(e) => { e.stopPropagation(); onSaveToDisk(); }}
-          style={actionBtnStyle}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-            (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-            (e.currentTarget as HTMLElement).style.background = "transparent";
-          }}
+          className={actionBtnClass}
         >
           <IconSave size={11} />
         </button>
       )}
 
-      {/* Cerrar */}
       <button
+        type="button"
         title="Cerrar tab"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        style={actionBtnStyle}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-          (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-          (e.currentTarget as HTMLElement).style.background = "transparent";
-        }}
+        className={actionBtnClass}
       >
         <IconClose size={11} />
       </button>
@@ -304,12 +308,14 @@ interface TabBarProps {
  * Barra de tabs. Maneja el flujo completo de cierre con confirmación.
  */
 export function TabBar({ onCloseTab }: TabBarProps) {
-  const { openTabs, activeTabId, setActiveTab, createTempTab, saveTempAsDisk, saveTab } =
+  const { openTabs, activeTabId, setActiveTab, reorderTabs, createTempTab, saveTempAsDisk, saveTab } =
     useExplorerStore();
   const tabsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Tab pendiente de cierre (esperando decisión del usuario en el modal)
   const [pendingClose, setPendingClose] = useState<OpenTab | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  const justReorderedRef = useRef(false);
 
   // Al cambiar el tab activo (p. ej. abrir un archivo nuevo), hacer scroll para que el tab sea visible
   useEffect(() => {
@@ -382,34 +388,29 @@ export function TabBar({ onCloseTab }: TabBarProps) {
     await saveTempAsDisk(tab.id, diskPath);
   }, [saveTempAsDisk]);
 
+  const handleDrop = useCallback((toIndex: number) => {
+    if (draggingIndex === null) return;
+    reorderTabs(draggingIndex, toIndex);
+    setDraggingIndex(null);
+    setDropTargetIndex(null);
+    justReorderedRef.current = true;
+    setTimeout(() => { justReorderedRef.current = false; }, 150);
+  }, [draggingIndex, reorderTabs]);
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   const emptyBar = (
-    <div
-      style={{
-        height: "36px",
-        display: "flex",
-        alignItems: "center",
-        borderBottom: "1px solid var(--color-border)",
-        background: "var(--color-surface-2)",
-        padding: "0 8px",
-      }}
-    >
+    <div className="flex h-9 items-center border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-2">
       <button
+        type="button"
         onClick={() => void createTempTab()}
         title="Nueva nota temporal"
-        style={newNoteBtn}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-accent)";
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)";
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-        }}
+        className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-transparent px-2.5 py-1.5 leading-none text-xs text-[var(--color-text-muted)] transition-all duration-150 hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
       >
-        <IconPlus size={12} />
-        <span style={{ fontSize: "12px" }}>Nueva nota</span>
+        <span className="flex items-center justify-center leading-none">
+          <IconPlus size={12} />
+        </span>
+        <span>Nueva nota</span>
       </button>
     </div>
   );
@@ -434,57 +435,41 @@ export function TabBar({ onCloseTab }: TabBarProps) {
       {openTabs.length === 0 ? emptyBar : (
         <div
           ref={tabsScrollRef}
-          style={{
-            height: "36px",
-            display: "flex",
-            alignItems: "stretch",
-            borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-surface-2)",
-            overflowX: "auto",
-            overflowY: "hidden",
-            flexShrink: 0,
-          }}
+          className="flex h-9 shrink-0 items-stretch overflow-x-auto overflow-y-hidden border-b border-[var(--color-border)] bg-[var(--color-surface-2)]"
         >
-          {openTabs.map((tab) => (
-            <div key={tab.id} data-tab-id={tab.id} style={{ flexShrink: 0, maxWidth: getTabMaxWidth(openTabs.length) }}>
+          {openTabs.map((tab, index) => (
+            <div key={tab.id} data-tab-id={tab.id} className="shrink-0" style={{ maxWidth: getTabMaxWidth(openTabs.length) }}>
               <Tab
                 tab={tab}
+                index={index}
                 isActive={tab.id === activeTabId}
-                onActivate={() => setActiveTab(tab.id)}
+                isDragging={draggingIndex === index}
+                isDropTarget={dropTargetIndex === index}
+                onActivate={() => {
+                  if (justReorderedRef.current) return;
+                  setActiveTab(tab.id);
+                }}
                 onClose={() => requestClose(tab)}
                 onSaveToDisk={() => void handleSaveToDisk(tab)}
+                onDragStart={(i) => setDraggingIndex(i)}
+                onDragOver={(i) => setDropTargetIndex(i)}
+                onDragLeave={() => setDropTargetIndex(null)}
+                onDrop={handleDrop}
+                onDragEnd={() => { setDraggingIndex(null); setDropTargetIndex(null); }}
                 maxWidth={getTabMaxWidth(openTabs.length)}
               />
             </div>
           ))}
 
           <button
+            type="button"
             onClick={() => void createTempTab()}
             title="Nueva nota temporal"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "32px",
-              height: "100%",
-              flexShrink: 0,
-              border: "none",
-              borderRight: "1px solid var(--color-border)",
-              background: "transparent",
-              color: "var(--color-text-muted)",
-              cursor: "pointer",
-              transition: "background 0.1s ease, color 0.1s ease",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "var(--color-surface-hover)";
-              (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-            }}
+            className="inline-flex min-h-[2.75rem] min-w-[2.75rem] shrink-0 items-center justify-center border-r border-[var(--color-border)] bg-transparent leading-none text-[var(--color-text-muted)] transition-colors duration-150 hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
           >
-            <IconPlus size={13} />
+            <span className="flex items-center justify-center leading-none">
+              <IconPlus size={13} />
+            </span>
           </button>
         </div>
       )}
@@ -492,33 +477,7 @@ export function TabBar({ onCloseTab }: TabBarProps) {
   );
 }
 
-// ── Estilos helpers ────────────────────────────────────────────────────────────
+// ── Botones de acción en cada tab (compactos, sin ocupar tanto espacio) ────────
 
-const actionBtnStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: "18px",
-  height: "18px",
-  flexShrink: 0,
-  borderRadius: "3px",
-  border: "none",
-  background: "transparent",
-  color: "var(--color-text-muted)",
-  cursor: "pointer",
-  padding: 0,
-  transition: "background 0.1s ease, color 0.1s ease",
-};
-
-const newNoteBtn: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "5px",
-  border: "1px solid var(--color-border)",
-  borderRadius: "5px",
-  background: "transparent",
-  color: "var(--color-text-muted)",
-  cursor: "pointer",
-  padding: "3px 10px",
-  transition: "all 0.12s ease",
-};
+const actionBtnClass =
+  "flex h-6 w-6 shrink-0 items-center justify-center rounded border-none bg-transparent text-[var(--color-text-muted)] transition-colors duration-150 hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]";

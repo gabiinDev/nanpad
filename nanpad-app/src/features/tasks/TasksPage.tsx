@@ -95,38 +95,24 @@ export default function TasksPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* ─── Barra superior ────────────────────────────────────────────── */}
-      <div
-        style={{
-          borderBottom: "1px solid var(--color-border)",
-          background: "var(--color-surface-2)",
-          padding: "8px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {/* Filtros de estado — solo en vista lista */}
+      {/* Barra superior: fluid, responsive (flex-wrap en ventanas estrechas) */}
+      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 md:px-5">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          {/* Filtros de estado — solo en vista lista, scroll horizontal si hace falta */}
           {view === "list" && (
-            <div style={{ display: "flex", gap: "4px", overflowX: "auto" }}>
+            <div className="flex gap-1 overflow-x-auto">
               {STATUS_FILTERS.map((f) => {
                 const active = filters.status === f.value;
                 return (
                   <button
                     key={String(f.value)}
+                    type="button"
                     onClick={() => { void setFilters(uc, { ...filters, status: f.value }); }}
+                    className="min-h-[2.75rem] shrink-0 whitespace-nowrap rounded-md border px-3 py-1.5 text-[0.8125rem] transition-all duration-150"
                     style={{
-                      whiteSpace: "nowrap",
-                      borderRadius: "6px",
-                      padding: "5px 12px",
-                      fontSize: "13px",
-                      border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border)"}`,
+                      borderColor: active ? "var(--color-accent)" : "var(--color-border)",
                       background: active ? "var(--color-accent-subtle)" : "transparent",
                       color: active ? "var(--color-accent)" : "var(--color-text-muted)",
-                      cursor: "pointer",
-                      transition: "all 0.12s ease",
                     }}
                   >
                     {f.label}
@@ -135,45 +121,31 @@ export default function TasksPage() {
               })}
             </div>
           )}
-          {/* En kanban: indicador */}
           {view === "kanban" && (
-            <span style={{ fontSize: "13px", color: "var(--color-text-muted)" }}>
+            <span className="text-[0.8125rem] text-[var(--color-text-muted)]">
               {allTasks.length} tareas en total
             </span>
           )}
 
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-            {/* Buscador de tareas */}
+          <div className="ml-auto flex flex-wrap items-center gap-2 md:gap-3">
             <TaskSearchBar
               query={searchQuery}
               onChange={setSearchQuery}
               resultCount={view === "list" ? filteredTasks.length : filteredAllTasks.length}
             />
-            {/* Toggle vista */}
-            <div
-              style={{
-                display: "flex",
-                gap: "2px",
-                borderRadius: "6px",
-                border: "1px solid var(--color-border)",
-                padding: "2px",
-              }}
-            >
+            {/* Toggle vista Lista / Kanban */}
+            <div className="flex gap-0.5 rounded-md border border-[var(--color-border)] p-0.5">
               {(["list", "kanban"] as const).map((v) => {
                 const active = view === v;
                 return (
                   <button
                     key={v}
+                    type="button"
                     onClick={() => { setView(v); }}
+                    className="min-h-[2.75rem] rounded px-3 py-1 text-[0.8125rem] transition-all duration-150"
                     style={{
-                      borderRadius: "5px",
-                      padding: "4px 12px",
-                      fontSize: "13px",
-                      border: "none",
                       background: active ? "var(--color-accent-subtle)" : "transparent",
                       color: active ? "var(--color-accent)" : "var(--color-text-muted)",
-                      cursor: "pointer",
-                      transition: "all 0.12s ease",
                     }}
                   >
                     {v === "list" ? "Lista" : "Kanban"}
@@ -182,35 +154,12 @@ export default function TasksPage() {
               })}
             </div>
 
-            {/* Botón nueva tarea */}
             <button
+              type="button"
               onClick={() => { setEditingTask(null); }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                borderRadius: "7px",
-                padding: "6px 16px",
-                fontSize: "14px",
-                fontWeight: 600,
-                border: "1px solid var(--color-accent)",
-                background: "var(--color-accent-subtle)",
-                color: "var(--color-accent)",
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background = "var(--color-accent)";
-                el.style.color = "var(--color-surface)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLElement;
-                el.style.background = "var(--color-accent-subtle)";
-                el.style.color = "var(--color-accent)";
-              }}
+              className="flex min-h-[2.75rem] items-center gap-1.5 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)] transition-all duration-150 hover:bg-[var(--color-accent)] hover:text-[var(--color-surface)]"
             >
-              <span style={{ fontSize: "16px", lineHeight: 1 }}>+</span>
+              <span className="leading-none">+</span>
               Nueva tarea
             </button>
           </div>
@@ -218,27 +167,21 @@ export default function TasksPage() {
 
         {/* Filtros de categoría */}
         {categories.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", color: "var(--color-text-muted)", flexShrink: 0 }}>
-              Categoría:
-            </span>
-            <div style={{ display: "flex", gap: "5px", overflowX: "auto" }}>
+          <div className="flex items-center gap-2">
+            <span className="shrink-0 text-xs text-[var(--color-text-muted)]">Categoría:</span>
+            <div className="flex gap-1.5 overflow-x-auto">
               {categories.map((cat) => {
                 const active = filters.categoryId === cat.id;
                 return (
                   <button
                     key={cat.id}
+                    type="button"
                     onClick={() => { toggleCategoryFilter(cat.id); }}
+                    className="min-h-[2.75rem] shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-[0.8125rem] transition-all duration-150"
                     style={{
-                      whiteSpace: "nowrap",
-                      borderRadius: "5px",
-                      padding: "3px 10px",
-                      fontSize: "13px",
-                      border: `1px solid ${active ? "var(--color-accent)" : "var(--color-border)"}`,
+                      borderColor: active ? "var(--color-accent)" : "var(--color-border)",
                       background: active ? "var(--color-accent-subtle)" : "transparent",
                       color: active ? "var(--color-accent)" : "var(--color-text-muted)",
-                      cursor: "pointer",
-                      transition: "all 0.12s ease",
                     }}
                   >
                     {cat.name}

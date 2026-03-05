@@ -118,14 +118,40 @@
 .animate-fade-in   { animation: fadeUp   0.20s ease-out both; }
 .animate-slide-in  { animation: slideIn  0.18s ease-out both; }
 
+/* Dropdown: entrada y salida */
+@keyframes dropdownEnter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes dropdownExit {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+.dropdown-enter   { animation: dropdownEnter 0.18s ease-out both; }
+.dropdown-exit    { animation: dropdownExit  0.12s ease-in both; }
+
+/* Mermaid: placeholder mientras carga y fade-in al mostrar el diagrama */
+.mermaid-diagram {
+  transition: opacity 0.2s ease-out;
+}
+.mermaid-diagram--loading {
+  min-height: 6rem;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* High Performance Mode — sin animaciones */
 .high-performance * {
   animation: none !important;
   transition: none !important;
 }
 
-/* ── Base ────────────────────────────────────────────────────── */
+/* ── Base (mobile-first, relative units) ─────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px; /* 1rem base para accesibilidad y escalado */
+}
 
 html, body, #root {
   height: 100%;
@@ -137,23 +163,23 @@ body {
   background-color: var(--color-surface);
   color: var(--color-text-primary);
   font-family: 'Geist', system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 1rem;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0.01em;
 }
 
 .font-mono, code, pre {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.875em;
+  font-size: 0.875rem;
 }
 
-/* ── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* ── Scrollbar (rem) ─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 0.3125rem; height: 0.3125rem; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border-strong);
-  border-radius: 3px;
+  border-radius: 0.1875rem;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 

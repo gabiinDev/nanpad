@@ -18,6 +18,9 @@ import {
   IconSplitMode,
   IconPreviewMode,
   IconNote,
+  IconCopy,
+  IconCut,
+  IconPaste,
 } from "@ui/icons/index.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
 
@@ -29,7 +32,9 @@ const MONACO_LANGUAGE_OPTIONS: { id: string; label: string }[] = [
   { id: "plaintext", label: "Texto plano" },
   { id: "markdown", label: "Markdown" },
   { id: "typescript", label: "TypeScript" },
+  { id: "typescriptreact", label: "TSX (React)" },
   { id: "javascript", label: "JavaScript" },
+  { id: "javascriptreact", label: "JSX (React)" },
   { id: "vue", label: "Vue" },
   { id: "html", label: "HTML" },
   { id: "css", label: "CSS" },
@@ -91,6 +96,71 @@ function useMonacoNoDiagnostics() {
   }, [monaco]);
 }
 
+// ── Selector de lenguaje (mismo estilo que barra de búsqueda: 30px, 7px radius) ─
+
+interface LanguageDropdownProps {
+  value: string;
+  options: { id: string; label: string }[];
+  onChange: (id: string) => void;
+}
+
+function LanguageDropdown({ value, options, onChange }: LanguageDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const current = options.find((o) => o.id === value) ?? options[0];
+
+  return (
+    <div ref={containerRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); }}
+        title="Resaltado de sintaxis"
+        className="flex h-[30px] min-w-[7rem] items-center justify-between gap-2 rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 pr-7 text-[13px] text-[var(--color-text-primary)] transition-colors duration-150 hover:border-[var(--color-border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-1 focus:ring-offset-[var(--color-surface-2)]"
+      >
+        <span className="truncate text-left">{current.label}</span>
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 4.5 L6 7.5 L9 4.5" />
+          </svg>
+        </span>
+      </button>
+      {open && (
+        <div
+          className="dropdown-enter absolute left-0 right-0 top-[calc(100%+2px)] z-50 max-h-64 overflow-y-auto rounded-[7px] border border-[var(--color-accent)] border-t-0 bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
+          style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+          role="listbox"
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              role="option"
+              aria-selected={opt.id === value}
+              onClick={() => { onChange(opt.id); setOpen(false); }}
+              className="w-full px-2.5 py-1.5 text-left text-[13px] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-hover)]"
+              style={{ background: opt.id === value ? "var(--color-accent-subtle)" : undefined }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Toolbar ────────────────────────────────────────────────────────────────────
 
 interface ToolbarProps {
@@ -98,105 +168,75 @@ interface ToolbarProps {
   mode: PanelMode;
   setMode: (m: PanelMode) => void;
   onSave: () => void;
-  /** Lenguaje efectivo para resaltado (puede ser override del usuario). */
   language: string;
   onLanguageChange: (lang: string) => void;
+  onCopyAll: () => void;
+  onCutAll: () => void;
+  onPaste: () => void;
 }
 
-function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange }: ToolbarProps) {
+function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste }: ToolbarProps) {
   const isMarkdown = tab.ext === "md" || tab.ext === "mdx";
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "4px 12px",
-        height: "36px",
-        borderBottom: "1px solid var(--color-border)",
-        background: "var(--color-surface-2)",
-        flexShrink: 0,
-      }}
-    >
-      {/* Izquierda: título → badges → desplegable de lenguaje (orden solicitado) */}
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
-        <span style={{ color: "var(--color-text-muted)", flexShrink: 0 }}>
+    <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="shrink-0 text-[var(--color-text-muted)]">
           {tab.isTemp ? <IconNote size={13} /> : <ExplorerFileIcon ext={tab.ext} size={13} />}
         </span>
-        <span style={{ fontSize: "13px", color: "var(--color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.8125rem] text-[var(--color-text-secondary)]">
           {tab.label}
         </span>
         {tab.isTemp && (
-          <span
-            style={{
-              fontSize: "11px",
-              color: "var(--color-priority-high)",
-              background: "var(--color-surface-active)",
-              borderRadius: "3px",
-              padding: "1px 5px",
-              flexShrink: 0,
-            }}
-          >
+          <span className="shrink-0 rounded bg-[var(--color-surface-active)] px-1.5 py-0.5 text-[0.6875rem] text-[var(--color-priority-high)]">
             temporal
           </span>
         )}
         {tab.isDirty && !tab.isTemp && (
-          <span style={{ fontSize: "11px", color: "var(--color-text-muted)", flexShrink: 0 }}>
-            (sin guardar)
-          </span>
+          <span className="shrink-0 text-[0.6875rem] text-[var(--color-text-muted)]">(sin guardar)</span>
         )}
-        {/* Separador entre título/badges y selector de lenguaje (como en el breadcrumb) */}
         {mode === "editor" && (
-          <div
-            style={{
-              width: "1px",
-              height: "16px",
-              background: "var(--color-border)",
-              flexShrink: 0,
-            }}
-          />
-        )}
-        {/* Selector de lenguaje — con padding derecho para la flecha */}
-        {mode === "editor" && (
-          <select
-            value={language}
-            onChange={(e) => { onLanguageChange(e.target.value); }}
-            title="Resaltado de sintaxis"
-            style={{
-              fontSize: "12px",
-              padding: "4px 8px",
-              paddingRight: "28px",
-              borderRadius: "5px",
-              border: "1px solid var(--color-border)",
-              background: "var(--color-surface)",
-              color: "var(--color-text-primary)",
-              cursor: "pointer",
-              minWidth: "120px",
-              flexShrink: 0,
-            }}
-          >
-            {MONACO_LANGUAGE_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <>
+            <div className="h-4 w-px shrink-0 bg-[var(--color-border)]" />
+            <LanguageDropdown
+              value={language}
+              options={MONACO_LANGUAGE_OPTIONS}
+              onChange={onLanguageChange}
+            />
+            <div className="h-4 w-px shrink-0 bg-[var(--color-border)]" />
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                title="Copiar todo"
+                onClick={onCopyAll}
+                className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+              >
+                <IconCopy size={12} />
+              </button>
+              <button
+                type="button"
+                title="Cortar todo"
+                onClick={onCutAll}
+                className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+              >
+                <IconCut size={12} />
+              </button>
+              <button
+                type="button"
+                title="Pegar"
+                onClick={onPaste}
+                className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+              >
+                <IconPaste size={12} />
+              </button>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Controles a la derecha */}
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-        {/* Toggle de vista — solo para markdown */}
+      <div className="flex shrink-0 items-center gap-1.5">
         {isMarkdown && (
-          <div
-            style={{
-              display: "flex",
-              border: "1px solid var(--color-border)",
-              borderRadius: "5px",
-              overflow: "hidden",
-            }}
-          >
+          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]">
             {(["editor", "split", "preview"] as PanelMode[]).map((m) => {
               const icons = {
                 editor: <IconEditorMode size={12} />,
@@ -208,21 +248,13 @@ function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange }: Too
               return (
                 <button
                   key={m}
+                  type="button"
                   title={labels[m]}
                   onClick={() => { setMode(m); }}
+                  className={`flex min-h-[2.75rem] items-center justify-center gap-1 px-2 py-1 text-xs transition-colors duration-150 ${m !== "preview" ? "border-r border-[var(--color-border)]" : ""}`}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "4px 8px",
-                    gap: "4px",
-                    border: "none",
-                    borderRight: m !== "preview" ? "1px solid var(--color-border)" : "none",
                     background: isActive ? "var(--color-surface-hover)" : "transparent",
                     color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    transition: "all 0.1s ease",
                     fontWeight: isActive ? 500 : 400,
                   }}
                 >
@@ -234,25 +266,16 @@ function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange }: Too
           </div>
         )}
 
-        {/* Guardar */}
         {!tab.isTemp && (
           <button
+            type="button"
             title="Guardar (Ctrl+S)"
             onClick={onSave}
             disabled={!tab.isDirty}
+            className="flex min-h-[2.75rem] items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-transparent px-2.5 py-1 text-xs transition-colors duration-150 disabled:cursor-default"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "5px",
-              padding: "4px 10px",
-              borderRadius: "5px",
-              border: "1px solid var(--color-border)",
-              background: "transparent",
               color: tab.isDirty ? "var(--color-text-primary)" : "var(--color-text-muted)",
-              cursor: tab.isDirty ? "pointer" : "default",
-              fontSize: "12px",
               opacity: tab.isDirty ? 1 : 0.45,
-              transition: "all 0.1s ease",
             }}
           >
             <IconSave size={12} />
@@ -350,8 +373,35 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   }, []);
 
   const monacoTheme = isDark ? "vs-dark" : "vs";
-  /** Monaco no tiene lenguaje "vue" nativo; usamos HTML para resaltado de SFC. */
-  const monacoLanguage = language === "vue" ? "html" : language;
+  /** Monaco: vue→html; typescriptreact/jsxreact no tienen tokenizer propio, usamos typescript/javascript. */
+  const monacoLanguage =
+    language === "vue" ? "html"
+    : language === "typescriptreact" ? "typescript"
+    : language === "javascriptreact" ? "javascript"
+    : language;
+
+  const handleCopyAll = useCallback(() => {
+    void navigator.clipboard.writeText(tab.content);
+  }, [tab.content]);
+
+  const handleCutAll = useCallback(() => {
+    void navigator.clipboard.writeText(tab.content);
+    updateTabContent(tab.id, "");
+  }, [tab.id, tab.content, updateTabContent]);
+
+  const handlePaste = useCallback(async () => {
+    const text = await navigator.clipboard.readText();
+    const ed = editorRef.current;
+    if (!ed) return;
+    const model = ed.getModel();
+    if (!model) return;
+    const selection = ed.getSelection();
+    const range = selection
+      ? { startLineNumber: selection.startLineNumber, startColumn: selection.startColumn, endLineNumber: selection.endLineNumber, endColumn: selection.endColumn }
+      : model.getFullModelRange();
+    ed.executeEdits("paste", [{ range, text }]);
+    updateTabContent(tab.id, model.getValue());
+  }, [tab.id, updateTabContent]);
 
   const monacoEditor = (
     <MonacoEditor
@@ -427,8 +477,39 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     />
   );
 
+  const [splitRatio, setSplitRatio] = useState(0.5);
+  const [draggingSplit, setDraggingSplit] = useState(false);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleSplitMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setDraggingSplit(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draggingSplit) return;
+    const onMove = (e: MouseEvent) => {
+      const el = splitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const ratio = Math.max(0.2, Math.min(0.8, x));
+      setSplitRatio(ratio);
+    };
+    const onUp = () => setDraggingSplit(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [draggingSplit]);
+
+  const editorFlex = mode === "split" ? splitRatio : 1;
+  const previewFlex = mode === "split" ? 1 - splitRatio : 1;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <div className="flex h-full flex-col overflow-hidden">
       <Toolbar
         tab={tab}
         mode={mode}
@@ -436,30 +517,44 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
         onSave={() => void saveTab(tab.id)}
         language={language}
         onLanguageChange={handleLanguageChange}
+        onCopyAll={handleCopyAll}
+        onCutAll={handleCutAll}
+        onPaste={handlePaste}
       />
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Editor Monaco */}
-        {(mode === "editor" || mode === "split") && (
-          <div style={{ flex: mode === "split" ? "0 0 50%" : "1", overflow: "hidden" }}>
-            {monacoEditor}
-          </div>
-        )}
+      <div ref={splitContainerRef} className="flex min-h-0 flex-1 overflow-hidden">
+        <div
+          key={mode}
+          className="flex min-h-0 min-w-0 flex-1 flex-row animate-fade-up overflow-hidden"
+        >
+          {(mode === "editor" || mode === "split") && (
+            <div
+              className="min-h-0 min-w-0 overflow-hidden"
+              style={{ flex: editorFlex }}
+            >
+              {monacoEditor}
+            </div>
+          )}
 
-        {/* Preview Markdown */}
-        {isMarkdown && (mode === "preview" || mode === "split") && (
-          <div
-            style={{
-              flex: mode === "split" ? "0 0 50%" : "1",
-              overflow: "auto",
-              padding: "20px 28px",
-              borderLeft: mode === "split" ? "1px solid var(--color-border)" : "none",
-              background: "var(--color-surface)",
-            }}
-          >
-            <MarkdownPreview content={tab.content} />
-          </div>
-        )}
+          {mode === "split" && isMarkdown && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              onMouseDown={handleSplitMouseDown}
+              className={`z-10 w-1 shrink-0 cursor-col-resize transition-colors duration-150 hover:bg-[var(--color-border-strong)] ${draggingSplit ? "bg-[var(--color-accent)]" : "bg-transparent"}`}
+            />
+          )}
+
+          {isMarkdown && (mode === "preview" || mode === "split") && (
+            <div
+              key={tab.id}
+              className={`min-h-0 min-w-0 overflow-auto bg-[var(--color-surface)] px-5 py-5 md:px-7 ${mode === "split" ? "border-l border-[var(--color-border)]" : ""}`}
+              style={{ flex: previewFlex }}
+            >
+              <MarkdownPreview content={tab.content} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -474,43 +569,14 @@ export function EditorEmpty() {
   const { createTempTab } = useExplorerStore();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100%",
-        gap: "16px",
-        color: "var(--color-text-muted)",
-      }}
-    >
-      <div style={{ fontSize: "15px", opacity: 0.6 }}>
+    <div className="flex h-full flex-col items-center justify-center gap-4 text-[var(--color-text-muted)]">
+      <p className="text-base opacity-60">
         Abrí un archivo del árbol o creá una nota rápida
-      </div>
+      </p>
       <button
+        type="button"
         onClick={() => void createTempTab()}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "8px 18px",
-          borderRadius: "7px",
-          border: "1px solid var(--color-border)",
-          background: "var(--color-surface-hover)",
-          color: "var(--color-text-secondary)",
-          fontSize: "14px",
-          cursor: "pointer",
-          transition: "all 0.12s ease",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-accent)";
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)";
-          (e.currentTarget as HTMLElement).style.color = "var(--color-text-secondary)";
-        }}
+        className="flex min-h-[2.75rem] items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-2 text-sm text-[var(--color-text-secondary)] transition-colors duration-150 hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]"
       >
         + Nueva nota temporal
       </button>

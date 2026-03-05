@@ -99,60 +99,45 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
 
   if (!initialized) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          color: "var(--color-text-muted)",
-          fontSize: "15px",
-          gap: "10px",
-        }}
-      >
-        <span style={{ opacity: 0.5 }}>Cargando explorador…</span>
+      <div className="flex h-full items-center justify-center gap-2.5 text-[var(--color-text-muted)]">
+        <span className="opacity-50">Cargando explorador…</span>
       </div>
     );
   }
 
   return (
     <div
-      style={{
-        display: "flex",
-        height: "100%",
-        overflow: "hidden",
-        cursor: dragging ? "col-resize" : "default",
-      }}
+      className={`flex min-h-0 h-full overflow-hidden ${dragging ? "cursor-col-resize" : "cursor-default"}`}
     >
-      {/* ─── Sidebar: árbol de archivos ───────────────────────────── */}
-      <div style={{ width: `${sidebarWidth}px`, flexShrink: 0, overflow: "hidden" }}>
+      {/* Sidebar: altura 100% del padre, min-h-0 para scroll interno del árbol */}
+      <div
+        className="flex h-full min-h-0 shrink-0 flex-col overflow-hidden"
+        style={{ width: sidebarWidth }}
+      >
         <FileTree onOpenFolderDialog={() => { void handleOpenFolderDialog(); }} />
       </div>
 
-      {/* ─── Divider redimensionable ──────────────────────────────── */}
+      {/* Divider redimensionable: área táctil suficiente */}
       <div
+        role="separator"
+        aria-orientation="vertical"
         onMouseDown={handleDividerMouseDown}
+        className="z-10 w-1 shrink-0 cursor-col-resize transition-colors duration-150 hover:bg-[var(--color-border-strong)]"
         style={{
-          width: "4px",
-          flexShrink: 0,
-          cursor: "col-resize",
           background: dragging ? "var(--color-accent)" : "transparent",
-          transition: "background 0.15s ease",
-          zIndex: 10,
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.background = "var(--color-border-strong)";
+          if (!dragging) (e.currentTarget as HTMLElement).style.background = "var(--color-border-strong)";
         }}
         onMouseLeave={(e) => {
           if (!dragging) (e.currentTarget as HTMLElement).style.background = "transparent";
         }}
       />
 
-      {/* ─── Panel derecho: tabs + editor ─────────────────────────── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* Panel derecho: tabs + editor, flex fluid */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TabBar onCloseTab={(id) => void closeTab(id)} />
-
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        <div className="min-h-0 flex-1 overflow-hidden">
           {activeTab ? (
             <EditorPanel tab={activeTab} isDark={isDark} />
           ) : (

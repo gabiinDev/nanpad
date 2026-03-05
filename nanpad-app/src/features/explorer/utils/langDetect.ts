@@ -3,11 +3,11 @@
  */
 
 const EXT_TO_LANG: Record<string, string> = {
-  // Web
+  // Web (tsx/jsx con resaltado React; Monaco recibe typescript/javascript en el editor)
   ts: "typescript",
-  tsx: "typescript",
+  tsx: "typescriptreact",
   js: "javascript",
-  jsx: "javascript",
+  jsx: "javascriptreact",
   mjs: "javascript",
   cjs: "javascript",
   html: "html",

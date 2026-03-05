@@ -582,10 +582,11 @@ export function ExplorerSearchBar() {
         )}
       </div>
 
-      {/* Dropdown */}
+      {/* Dropdown con animación de entrada */}
       {open && (
         <div
           ref={dropdownRef}
+          className="dropdown-enter"
           style={{
             position: "absolute",
             top: "100%",

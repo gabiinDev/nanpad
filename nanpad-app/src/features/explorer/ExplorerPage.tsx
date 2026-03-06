@@ -9,12 +9,14 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useApp } from "@app/AppContext.tsx";
-import { useExplorerStore, getSessionFromStore } from "@/store/useExplorerStore.ts";
+import { useExplorerStore, getSessionFromStore, type PersistedSession } from "@/store/useExplorerStore.ts";
+import { useExplorerFloatingSearchStore } from "@/store/useExplorerFloatingSearchStore.ts";
 import { loadAllTempFiles, openFolderDialog } from "@/infrastructure/FsService.ts";
 import { homeDir } from "@tauri-apps/api/path";
 import { FileTree } from "./components/FileTree.tsx";
 import { TabBar } from "./components/TabBar.tsx";
 import { EditorPanel, EditorEmpty } from "./components/EditorPanel.tsx";
+import { ExplorerFloatingSearch } from "./components/ExplorerFloatingSearch.tsx";
 
 interface ExplorerPageProps {
   isDark: boolean;
@@ -38,11 +40,17 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
     restoreLastClosedTab,
   } = useExplorerStore();
 
+  const setFloatingSearchOpen = useExplorerFloatingSearchStore((s) => s.setOpen);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
         void createTempTab();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setFloatingSearchOpen(true);
       }
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "z") {
         const el = document.activeElement;
@@ -57,7 +65,7 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [createTempTab, restoreLastClosedTab]);
+  }, [createTempTab, restoreLastClosedTab, setFloatingSearchOpen]);
 
   const [sidebarWidth, setSidebarWidth] = useState(240);
   const [dragging, setDragging] = useState(false);
@@ -75,7 +83,7 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
         homeDir(),
         loadExplorerSession(),
       ]);
-      await init(metas, home, session ?? undefined);
+      await init(metas, home, (session ?? undefined) as PersistedSession | undefined);
     }
     void initExplorer();
   }, [initialized, init, loadExplorerSession]);
@@ -200,6 +208,7 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
           )}
         </div>
       </div>
+      <ExplorerFloatingSearch />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { useState, useCallback } from "react";
 import type { TaskDTO } from "@nanpad/core";
 import { PriorityBadge } from "@ui/components/Badge.tsx";
 import { ContextMenu, type ContextMenuItem } from "@ui/components/ContextMenu.tsx";
-import { IconEdit, IconProgress, IconRestore, IconCheck, IconArchive, IconPlus } from "@ui/icons/index.tsx";
+import { IconEdit, IconProgress, IconRestore, IconCheck, IconArchive, IconPlus, IconClock } from "@ui/icons/index.tsx";
 
 interface KanbanViewProps {
   tasks: TaskDTO[];
@@ -16,6 +16,8 @@ interface KanbanViewProps {
   onMoveStatus: (taskId: string, newStatus: TaskDTO["status"]) => void;
   /** Al hacer click derecho en el contenedor de una columna. */
   onAddTask?: () => void;
+  /** Abrir modal de historial de la tarea. */
+  onShowHistory?: (task: TaskDTO) => void;
 }
 
 interface ContextState { x: number; y: number; task: TaskDTO; }
@@ -268,7 +270,7 @@ function KanbanColumn({
 }
 
 /** Vista Kanban principal. */
-export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask }: KanbanViewProps) {
+export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask, onShowHistory }: KanbanViewProps) {
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
 
   const handleDrop = (taskId: string, status: TaskDTO["status"]) => {
@@ -285,6 +287,9 @@ export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask }: KanbanVie
   const buildMenuItems = useCallback((task: TaskDTO): ContextMenuItem[] => {
     const items: ContextMenuItem[] = [
       { label: "Editar", faIcon: <IconEdit size={12} />, onClick: () => { onEdit(task); } },
+      ...(onShowHistory
+        ? [{ label: "Ver historial", faIcon: <IconClock size={12} />, onClick: () => { onShowHistory(task); setContextMenu(null); }, separator: true as const }]
+        : []),
     ];
     const allStatuses: { status: TaskDTO["status"]; label: string; faIcon: React.ReactNode }[] = [
       { status: "todo",        label: "Por hacer",   faIcon: <IconRestore size={12} /> },
@@ -303,7 +308,7 @@ export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask }: KanbanVie
         });
       });
     return items;
-  }, [onEdit, onMoveStatus]);
+  }, [onEdit, onMoveStatus, onShowHistory]);
 
   return (
     <>

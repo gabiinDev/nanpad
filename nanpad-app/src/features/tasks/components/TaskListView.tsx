@@ -10,7 +10,7 @@ import type { TaskDTO } from "@nanpad/core";
 import { useNavFocusStore } from "@/store/useNavFocusStore.ts";
 import { StatusBadge, PriorityBadge } from "@ui/components/Badge.tsx";
 import { ContextMenu, type ContextMenuItem } from "@ui/components/ContextMenu.tsx";
-import { IconCheck, IconProgress, IconArchive, IconRestore, IconEdit, IconPlus } from "@ui/icons/index.tsx";
+import { IconCheck, IconProgress, IconArchive, IconRestore, IconEdit, IconPlus, IconClock } from "@ui/icons/index.tsx";
 
 interface TaskListViewProps {
   tasks: TaskDTO[];
@@ -20,6 +20,8 @@ interface TaskListViewProps {
   onMoveStatus: (id: string, status: TaskDTO["status"]) => void;
   /** Al hacer click derecho en el contenedor (fuera de una tarea). */
   onAddTask?: () => void;
+  /** Abrir modal de historial de la tarea. */
+  onShowHistory?: (task: TaskDTO) => void;
 }
 
 interface ContextState { x: number; y: number; task: TaskDTO; }
@@ -41,7 +43,7 @@ const PRIORITY_COLOR: Record<number, string> = {
 /**
  * Lista virtualizada de tareas con estética de editor de código.
  */
-export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatus, onAddTask }: TaskListViewProps) {
+export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatus, onAddTask, onShowHistory }: TaskListViewProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
   const [emptyContextMenu, setEmptyContextMenu] = useState<EmptyContextState | null>(null);
@@ -85,6 +87,9 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
     const { status } = task;
     const items: ContextMenuItem[] = [
       { label: "Editar",       faIcon: <IconEdit size={12} />,     onClick: () => { onEdit(task); } },
+      ...(onShowHistory
+        ? [{ label: "Ver historial", faIcon: <IconClock size={12} />, onClick: () => { onShowHistory(task); setContextMenu(null); }, separator: true as const }]
+        : []),
     ];
     if (status !== "in_progress") items.push({ label: "En progreso", faIcon: <IconProgress size={12} />, onClick: () => { onMoveStatus(task.id, "in_progress"); }, separator: true });
     if (status !== "todo")        items.push({ label: "Por hacer",   faIcon: <IconRestore size={12} />,  onClick: () => { onMoveStatus(task.id, "todo"); } });
@@ -93,7 +98,7 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
     if (status === "done" || status === "archived")
       items.push({ label: "Restaurar", faIcon: <IconRestore size={12} />, onClick: () => { onRestore(task.id); } });
     return items;
-  }, [onEdit, onComplete, onRestore, onMoveStatus]);
+  }, [onEdit, onComplete, onRestore, onMoveStatus, onShowHistory]);
 
   if (tasks.length === 0) {
     return (

@@ -17,6 +17,8 @@ import {
   CompleteTask,
   RestoreTask,
   AddSubtask,
+  UpdateSubtask,
+  DeleteSubtask,
   AttachCodeToTask,
   GetTaskHistory,
   // Category
@@ -72,6 +74,8 @@ export interface AppUseCases {
   completeTask: CompleteTask;
   restoreTask: RestoreTask;
   addSubtask: AddSubtask;
+  updateSubtask: UpdateSubtask;
+  deleteSubtask: DeleteSubtask;
   attachCodeToTask: AttachCodeToTask;
   getTaskHistory: GetTaskHistory;
   // Category
@@ -127,6 +131,8 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const completeTask = new CompleteTask(taskRepository, eventBus);
   const restoreTask = new RestoreTask(taskRepository, eventBus);
   const addSubtask = new AddSubtask(taskRepository);
+  const updateSubtask = new UpdateSubtask(taskRepository);
+  const deleteSubtask = new DeleteSubtask(taskRepository);
   const attachCodeToTask = new AttachCodeToTask(taskRepository);
   const getTaskHistory = new GetTaskHistory(historyRepository);
 
@@ -195,6 +201,8 @@ export function buildComposition(db: IDatabase): AppUseCases {
     completeTask,
     restoreTask,
     addSubtask,
+    updateSubtask,
+    deleteSubtask,
     attachCodeToTask,
     getTaskHistory,
     createCategory,

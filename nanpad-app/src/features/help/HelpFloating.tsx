@@ -26,7 +26,7 @@ const styles = {
 
 const GLOBAL_NAV = (
   <p className={styles.nav}>
-    Navegación: <kbd className={styles.kbd}>H</kbd> Inicio · <kbd className={styles.kbd}>T</kbd> Tareas ·{" "}
+    <kbd className={styles.kbd}>Ctrl+K</kbd> Buscar o ir a · <kbd className={styles.kbd}>H</kbd> Inicio · <kbd className={styles.kbd}>T</kbd> Tareas ·{" "}
     <kbd className={styles.kbd}>E</kbd> Explorador · <kbd className={styles.kbd}>S</kbd> Ajustes
   </p>
 );
@@ -39,6 +39,7 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
         <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Atajos de teclado</h3>
         <ul className={`${styles.list} list-none pl-0`}>
+          <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+U</kbd> <span>Enfocar buscador de tareas</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+N</kbd> <span>Nueva tarea</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+Z</kbd> <span>Deshacer cambio (máx. 5)</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+Y</kbd> <span>Rehacer cambio</span></li>
@@ -47,7 +48,8 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
         <h3 className={styles.sectionTitle}>Interacciones</h3>
         <ul className={`${styles.list} list-disc list-inside pl-0`}>
           <li><strong className="text-[var(--color-text-primary)]">Click derecho en espacio vacío</strong> (Kanban): menú para crear tarea.</li>
-          <li><strong className="text-[var(--color-text-primary)]">Click derecho en una tarea</strong> (Kanban o lista): editar, eliminar, cambiar estado.</li>
+          <li><strong className="text-[var(--color-text-primary)]">Click derecho en una tarea</strong> (Kanban o lista): editar, cambiar estado, <strong>ver historial</strong>.</li>
+          <li><strong className="text-[var(--color-text-primary)]">Al editar una tarea</strong>: botón «Historial» para ver el historial de cambios; sección «Subtareas» para añadir, marcar o eliminar.</li>
         </ul>
       </>
     );
@@ -59,6 +61,8 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
         <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Atajos de teclado</h3>
         <ul className={`${styles.list} list-none pl-0`}>
+          <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+U</kbd> <span>Enfocar buscador del explorador</span></li>
+          <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+B</kbd> <span>Buscar en contenido de tabs / Comparar archivos</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+N</kbd> <span>Nueva nota temporal</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+Z</kbd> <span>Deshacer en editor</span></li>
           <li className={styles.listItem}><kbd className={styles.kbd}>Ctrl+Y</kbd> <span>Rehacer en editor</span></li>
@@ -67,8 +71,10 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
         <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Interacciones</h3>
         <ul className={`${styles.list} list-disc list-inside pl-0`}>
+          <li><strong className="text-[var(--color-text-primary)]">Botón «Buscar en tabs»</strong> o <kbd className={styles.kbd}>Ctrl+B</kbd>: buscar texto en el contenido de los tabs abiertos o comparar dos archivos.</li>
           <li><strong className="text-[var(--color-text-primary)]">Doble clic en un archivo</strong>: lo fija en la barra de tabs (tab real).</li>
           <li><strong className="text-[var(--color-text-primary)]">En el buscador o árbol</strong>: doble clic en una carpeta la abre en el árbol del explorador.</li>
+          <li><strong className="text-[var(--color-text-primary)]">En la barra del editor</strong>: botón con icono de tareas para <strong>adjuntar la selección (o todo el contenido) a una tarea</strong> existente.</li>
         </ul>
       </>
     );
@@ -76,10 +82,11 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
   if (route === "home") {
     return (
       <>
+        {GLOBAL_NAV}
+        <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Inicio</h3>
         <p className={styles.paragraph}>
-          Resumen del workspace. Usa los atajos <kbd className={styles.kbd}>H</kbd>, <kbd className={styles.kbd}>T</kbd>,{" "}
-          <kbd className={styles.kbd}>E</kbd>, <kbd className={styles.kbd}>S</kbd> para navegar entre secciones.
+          Resumen del workspace. <kbd className={styles.kbd}>Ctrl+K</kbd> abre la búsqueda rápida para ir a una sección, tarea o documento.
         </p>
       </>
     );
@@ -87,6 +94,8 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
   if (route === "settings") {
     return (
       <>
+        {GLOBAL_NAV}
+        <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Ajustes</h3>
         <p className={styles.paragraph}>
           Aquí puedes cambiar tema, modo rendimiento, vista por defecto de tareas y mostrar u ocultar este icono de ayuda.

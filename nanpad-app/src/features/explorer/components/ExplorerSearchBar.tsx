@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listDir } from "@/infrastructure/FsService.ts";
 import { useExplorerStore } from "@/store/useExplorerStore.ts";
+import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
 import type { FsNode } from "@/infrastructure/FsService.ts";
 import {
   IconFolder,
@@ -350,6 +351,7 @@ function SearchGroup({ group, query, rootPath, onSelectFile, onSelectDir }: Sear
 
 export function ExplorerSearchBar() {
   const { rootPath, tree, openFile, setRoot } = useExplorerStore();
+  const setFocusExplorerSearch = useSearchFocusStore((s) => s.setFocusExplorerSearch);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [searchGroups, setSearchGroups] = useState<SearchTreeNode[]>([]);
@@ -368,6 +370,12 @@ export function ExplorerSearchBar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelledRef = useRef({ current: false });
+
+  // Registrar foco del buscador para Ctrl+U
+  useEffect(() => {
+    setFocusExplorerSearch(() => inputRef.current?.focus());
+    return () => setFocusExplorerSearch(null);
+  }, [setFocusExplorerSearch]);
 
   // Al abrir el dropdown, resetear la ruta de navegación a la raíz actual del explorador
   useEffect(() => {

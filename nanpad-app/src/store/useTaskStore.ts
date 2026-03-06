@@ -112,7 +112,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   updateTask: async (uc, input) => {
-    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const { tasks, allTasks, taskUndoStack } = get();
     const task = tasks.find((t) => t.id === input.id) ?? allTasks.find((t) => t.id === input.id);
     if (task) {
       set({
@@ -125,7 +125,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   completeTask: async (uc, taskId) => {
-    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const { tasks, allTasks, taskUndoStack } = get();
     const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
     if (task) {
       set({
@@ -138,7 +138,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   restoreTask: async (uc, taskId) => {
-    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const { tasks, allTasks, taskUndoStack } = get();
     const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
     if (task) {
       set({
@@ -151,7 +151,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   moveTaskStatus: async (uc, taskId, newStatus) => {
-    const { tasks, allTasks, taskUndoStack, taskRedoStack } = get();
+    const { tasks, allTasks, taskUndoStack } = get();
     const task = tasks.find((t) => t.id === taskId) ?? allTasks.find((t) => t.id === taskId);
     if (task) {
       set({

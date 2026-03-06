@@ -134,6 +134,8 @@ export {
   CompleteTask,
   RestoreTask,
   AddSubtask,
+  UpdateSubtask,
+  DeleteSubtask,
   AttachCodeToTask,
   GetTaskHistory,
   TaskSqliteRepository,
@@ -148,5 +150,7 @@ export type {
   MoveTaskStatusInput,
   AddSubtaskInput,
   AttachCodeToTaskInput,
+  UpdateSubtaskInput,
+  DeleteSubtaskInput,
   ITaskRepository,
 } from "./modules/task/application/index";

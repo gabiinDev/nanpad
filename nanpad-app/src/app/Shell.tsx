@@ -6,6 +6,10 @@
 import { useEffect } from "react";
 import type { AppRoute } from "./router.ts";
 import { useRouteStore } from "@/store/useRouteStore.ts";
+import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
+import { useCommandPaletteStore } from "@/store/useCommandPaletteStore.ts";
+import { useExplorerFloatingSearchStore } from "@/store/useExplorerFloatingSearchStore.ts";
+import { CommandPalette } from "@features/command-palette/CommandPalette.tsx";
 import { useTheme } from "./useTheme.ts";
 import { useApp } from "@app/AppContext.tsx";
 import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
@@ -17,13 +21,14 @@ import {
   IconMoon,
   IconSun,
   IconLogo,
+  IconSearch,
 } from "@ui/icons/index.tsx";
 import HomePage from "@features/home/HomePage.tsx";
 import TasksPage from "@features/tasks/TasksPage.tsx";
 import ExplorerPage from "@features/explorer/ExplorerPage.tsx";
 import SettingsPage from "@features/settings/SettingsPage.tsx";
 import { ExplorerSearchBar } from "@features/explorer/components/ExplorerSearchBar.tsx";
-import { useExplorerStore } from "@/store/useExplorerStore.ts";
+import { useExplorerStore, type PersistedSession } from "@/store/useExplorerStore.ts";
 import { loadAllTempFiles } from "@/infrastructure/FsService.ts";
 import { homeDir } from "@tauri-apps/api/path";
 import { IconPlus } from "@ui/icons/index.tsx";
@@ -103,7 +108,7 @@ export default function Shell() {
         homeDir(),
         uc.loadExplorerSession(),
       ]);
-      await init(metas, home, session ?? undefined);
+      await init(metas, home, (session ?? undefined) as PersistedSession | undefined);
     })();
   }, [uc]);
 
@@ -122,6 +127,33 @@ export default function Shell() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [setRoute]);
+
+  // Ctrl+U: foco en el buscador (Tareas o Explorador según la ruta)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key?.toLowerCase() !== "u") return;
+      if (isEditableFocused()) return;
+      e.preventDefault();
+      const { focusTasksSearch, focusExplorerSearch } = useSearchFocusStore.getState();
+      if (route === "tasks") focusTasksSearch?.();
+      else if (route === "documents") focusExplorerSearch?.();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [route]);
+
+  // Ctrl+K: abrir command palette
+  const setPaletteOpen = useCommandPaletteStore((s) => s.setOpen);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [setPaletteOpen]);
 
   return (
     <div
@@ -251,22 +283,42 @@ export default function Shell() {
           {/* Zona explorador: botón + buscador, flex fluid */}
           <div className="flex min-w-0 flex-1 basis-0 items-center gap-2 md:gap-3">
             {route === "documents" && (
-              <button
-                type="button"
-                onClick={() => void createTempTab()}
-                title="Nueva nota temporal (Ctrl+N)"
-                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition-all duration-150 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-hover)]"
-              >
-                <IconPlus size={12} />
-                <span>Nueva nota</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => useExplorerFloatingSearchStore.getState().setOpen(true)}
+                  title="Buscar en contenido de tabs / Comparar archivos (Ctrl+B)"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-all duration-150 hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)]"
+                >
+                  <IconSearch size={12} />
+                  <span>Buscar en tabs</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void createTempTab()}
+                  title="Nueva nota temporal (Ctrl+N)"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition-all duration-150 hover:border-[var(--color-accent)] hover:bg-[var(--color-surface-hover)]"
+                >
+                  <IconPlus size={12} />
+                  <span>Nueva nota</span>
+                </button>
+              </>
             )}
             <div className="flex min-w-0 flex-1 items-center justify-center">
               {route === "documents" && <ExplorerSearchBar />}
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              title="Buscar o ir a (Ctrl+K)"
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-secondary)]"
+            >
+              <IconSearch size={12} />
+              <span className="hidden sm:inline">Ctrl+K</span>
+            </button>
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-status-done)]" />
             <span className="text-xs text-[var(--color-text-muted)]">activo</span>
           </div>
@@ -281,6 +333,7 @@ export default function Shell() {
         </div>
       </main>
       {showHelpIcon && <HelpFloating visible={showHelpIcon} />}
+      <CommandPalette />
     </div>
   );
 }

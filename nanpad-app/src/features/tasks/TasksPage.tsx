@@ -4,6 +4,8 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
+import { useCommandPaletteStore } from "@/store/useCommandPaletteStore.ts";
 import { useApp } from "@app/AppContext.tsx";
 import { useTaskStore } from "@/store/useTaskStore.ts";
 import { useCategoryStore } from "@/store/useCategoryStore.ts";
@@ -11,7 +13,8 @@ import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
 import { TaskListView } from "./components/TaskListView.tsx";
 import { KanbanView } from "./components/KanbanView.tsx";
 import { TaskForm } from "./components/TaskForm.tsx";
-import { TaskSearchBar, taskMatchesQuery } from "./components/TaskSearchBar.tsx";
+import { TaskHistoryModal } from "./components/TaskHistoryModal.tsx";
+import { TaskSearchBar, taskMatchesQuery, type TaskSearchBarRef } from "./components/TaskSearchBar.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
 import type { TaskDTO, CreateTaskInput, UpdateTaskInput } from "@nanpad/core";
 
@@ -62,8 +65,11 @@ export default function TasksPage() {
   const { categories, loadCategories } = useCategoryStore();
 
   const [editingTask, setEditingTask] = useState<TaskDTO | null | undefined>(undefined);
+  const [historyTask, setHistoryTask] = useState<TaskDTO | null>(null);
   // undefined = cerrado, null = nuevo, TaskDTO = edición
   const [searchQuery, setSearchQuery] = useState("");
+  const taskSearchBarRef = useRef<TaskSearchBarRef>(null);
+  const setFocusTasksSearch = useSearchFocusStore((s) => s.setFocusTasksSearch);
 
   useEffect(() => {
     void loadTasks(uc);
@@ -72,6 +78,18 @@ export default function TasksPage() {
       setTaskUndoStacks(session.undo, session.redo);
     });
   }, [uc]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Registrar foco del buscador para Ctrl+U
+  useEffect(() => {
+    setFocusTasksSearch(() => taskSearchBarRef.current?.focus());
+    return () => setFocusTasksSearch(null);
+  }, [setFocusTasksSearch]);
+
+  // Registrar "Nueva tarea" para la command palette (Ctrl+K)
+  useEffect(() => {
+    useCommandPaletteStore.getState().setOnOpenNewTask(() => setEditingTask(null));
+    return () => useCommandPaletteStore.getState().setOnOpenNewTask(null);
+  }, []);
 
   // Aplicar vista por defecto (lista/kanban) al entrar en Tareas
   useEffect(() => {
@@ -184,6 +202,7 @@ export default function TasksPage() {
 
           <div className="ml-auto flex flex-wrap items-center gap-2 md:gap-3">
             <TaskSearchBar
+              ref={taskSearchBarRef}
               query={searchQuery}
               onChange={setSearchQuery}
               resultCount={view === "list" ? filteredTasks.length : filteredAllTasks.length}
@@ -262,6 +281,7 @@ export default function TasksPage() {
             onRestore={(id) => { void restoreTask(uc, id); }}
             onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status); }}
             onAddTask={() => setEditingTask(null)}
+            onShowHistory={setHistoryTask}
           />
         ) : (
           <KanbanView
@@ -269,6 +289,7 @@ export default function TasksPage() {
             onEdit={setEditingTask}
             onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status); }}
             onAddTask={() => setEditingTask(null)}
+            onShowHistory={setHistoryTask}
           />
         )}
       </div>
@@ -280,6 +301,18 @@ export default function TasksPage() {
           categories={categories}
           onSave={handleSave}
           onClose={() => { setEditingTask(undefined); }}
+          addSubtask={editingTask ? (taskId, title) => uc.addSubtask.execute({ taskId, title }) : undefined}
+          updateSubtask={editingTask ? async (taskId, subtaskId, patch) => { await uc.updateSubtask.execute({ taskId, subtaskId, ...patch }); } : undefined}
+          deleteSubtask={editingTask ? (taskId, subtaskId) => uc.deleteSubtask.execute({ taskId, subtaskId }) : undefined}
+          onSubtaskChange={editingTask ? (updated) => setEditingTask(updated) : undefined}
+          onShowHistory={editingTask ? () => setHistoryTask(editingTask) : undefined}
+        />
+      )}
+      {historyTask && (
+        <TaskHistoryModal
+          taskId={historyTask.id}
+          taskTitle={historyTask.title}
+          onClose={() => setHistoryTask(null)}
         />
       )}
     </div>

@@ -12,6 +12,8 @@ export { MoveTaskStatus } from "./usecases/MoveTaskStatus";
 export { CompleteTask } from "./usecases/CompleteTask";
 export { RestoreTask } from "./usecases/RestoreTask";
 export { AddSubtask } from "./usecases/AddSubtask";
+export { UpdateSubtask } from "./usecases/UpdateSubtask";
+export { DeleteSubtask } from "./usecases/DeleteSubtask";
 export { AttachCodeToTask } from "./usecases/AttachCodeToTask";
 export { GetTaskHistory } from "./usecases/GetTaskHistory";
 
@@ -27,6 +29,8 @@ export type {
   AddSubtaskInput,
   AttachCodeToTaskInput,
 } from "./dtos/TaskDTO";
+export type { UpdateSubtaskInput } from "./usecases/UpdateSubtask";
+export type { DeleteSubtaskInput } from "./usecases/DeleteSubtask";
 
 
 // ─── Contrato del repositorio (necesario para el Composition Root) ───────────

@@ -21,7 +21,9 @@ import {
   IconCopy,
   IconCut,
   IconPaste,
+  IconTasks,
 } from "@ui/icons/index.tsx";
+import { AttachToTaskModal, type AttachToTaskPayload } from "./AttachToTaskModal.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
 
 
@@ -173,9 +175,10 @@ interface ToolbarProps {
   onCopyAll: () => void;
   onCutAll: () => void;
   onPaste: () => void;
+  onAttachToTask?: () => void;
 }
 
-function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste }: ToolbarProps) {
+function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask }: ToolbarProps) {
   const isMarkdown = tab.ext === "md" || tab.ext === "mdx";
 
   return (
@@ -229,6 +232,16 @@ function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCop
               >
                 <IconPaste size={12} />
               </button>
+              {onAttachToTask && (
+                <button
+                  type="button"
+                  title="Añadir selección a tarea"
+                  onClick={onAttachToTask}
+                  className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
+                >
+                  <IconTasks size={12} />
+                </button>
+              )}
             </div>
           </>
         )}
@@ -305,8 +318,6 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     mdViewModes,
     setMdViewMode,
     pushUndo,
-    undo,
-    redo,
   } = useExplorerStore();
   const monaco = useMonaco();
   /** Evita registrar el contenido en undo cuando el cambio viene de undo/redo. */
@@ -344,6 +355,8 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   /** Override de lenguaje por tab (solo modo editor). */
   const [languageOverrides, setLanguageOverrides] = useState<Record<string, string>>({});
+  /** Payload para el modal "Añadir a tarea" (selección actual). */
+  const [attachModalPayload, setAttachModalPayload] = useState<AttachToTaskPayload | null>(null);
 
   const detectedLanguage = detectLanguage(tab.ext);
   const language = languageOverrides[tab.id] ?? detectedLanguage;
@@ -351,6 +364,24 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   const handleLanguageChange = useCallback((lang: string) => {
     setLanguageOverrides((prev) => ({ ...prev, [tab.id]: lang }));
   }, [tab.id]);
+
+  const handleAttachToTask = useCallback(() => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    const model = ed.getModel();
+    if (!model) return;
+    const selection = ed.getSelection();
+    const range = selection ?? model.getFullModelRange();
+    const content = model.getValueInRange(range);
+    if (!content.trim()) return;
+    setAttachModalPayload({
+      content,
+      language: tab.ext ?? null,
+      filePath: tab.path ?? null,
+      lineStart: range.startLineNumber,
+      lineEnd: range.endLineNumber,
+    });
+  }, [tab.id, tab.ext, tab.path]);
 
   // Aplicar configuración sin diagnósticos
   useMonacoNoDiagnostics();
@@ -435,6 +466,22 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     },
     [monaco]
   );
+
+  // Escuchar evento del buscador flotante (Ctrl+B) para ir a una línea
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ tabId: string; lineNumber: number }>;
+      if (ev.detail?.tabId !== tab.id) return;
+      const line = ev.detail.lineNumber;
+      const ed = editorRef.current;
+      if (!ed) return;
+      ed.revealLine(line, 1);
+      ed.setPosition({ lineNumber: line, column: 1 });
+      ed.focus();
+    };
+    window.addEventListener("nanpad:editor-reveal-line", handler);
+    return () => window.removeEventListener("nanpad:editor-reveal-line", handler);
+  }, [tab.id]);
 
   const monacoTheme = isDark ? "vs-dark" : "vs";
   /** Monaco: vue→html; typescriptreact/jsxreact no tienen tokenizer propio, usamos typescript/javascript. */
@@ -593,6 +640,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
         onCopyAll={handleCopyAll}
         onCutAll={handleCutAll}
         onPaste={handlePaste}
+        onAttachToTask={handleAttachToTask}
       />
 
       <div ref={splitContainerRef} className="flex min-h-0 flex-1 overflow-hidden">
@@ -629,6 +677,12 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
           )}
         </div>
       </div>
+      {attachModalPayload && (
+        <AttachToTaskModal
+          payload={attachModalPayload}
+          onClose={() => setAttachModalPayload(null)}
+        />
+      )}
     </div>
   );
 }

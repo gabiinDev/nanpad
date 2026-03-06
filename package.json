@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "pnpm --filter @nanpad/app tauri dev",
     "build": "pnpm --filter @nanpad/core build && pnpm --filter @nanpad/app build",
+    "build:portable": "pnpm --filter @nanpad/core build && pnpm --filter @nanpad/app tauri:build:portable",
     "test": "pnpm -r --parallel test",
     "test:core": "pnpm --filter @nanpad/core test",
     "test:app": "pnpm --filter @nanpad/app test",

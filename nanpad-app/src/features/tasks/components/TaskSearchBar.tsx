@@ -7,7 +7,7 @@
  * pueda aplicarla como filtro adicional antes de pasar las tareas a las vistas.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import type { TaskDTO } from "@nanpad/core";
 import { IconSearch, IconClose } from "@ui/icons/index.tsx";
 
@@ -47,13 +47,23 @@ interface TaskSearchBarProps {
   resultCount?: number;
 }
 
+export interface TaskSearchBarRef {
+  focus: () => void;
+}
+
 /**
  * Barra de búsqueda para tareas.
  * Diseño minimalista coherente con el header de la app.
+ * Ref opcional para enfocar el input (ej. atajo Ctrl+U).
  */
-export function TaskSearchBar({ query, onChange, resultCount }: TaskSearchBarProps) {
+export const TaskSearchBar = forwardRef<TaskSearchBarRef, TaskSearchBarProps>(
+  function TaskSearchBar({ query, onChange, resultCount }, ref) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () => { inputRef.current?.focus(); },
+  }), []);
 
   const handleClear = useCallback(() => {
     onChange("");
@@ -161,4 +171,4 @@ export function TaskSearchBar({ query, onChange, resultCount }: TaskSearchBarPro
       )}
     </div>
   );
-}
+});

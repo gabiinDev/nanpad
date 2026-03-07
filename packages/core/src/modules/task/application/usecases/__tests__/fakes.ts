@@ -80,6 +80,10 @@ export class InMemoryTaskRepository implements ITaskRepository {
     return [...this.snippets.values()].filter((s) => s.taskId === taskId);
   }
 
+  async deleteCodeSnippet(snippetId: EntityId): Promise<void> {
+    this.snippets.delete(snippetId);
+  }
+
   /** Utilidad de test: obtener todas las tareas. */
   getAllTasks(): Task[] {
     return [...this.tasks.values()];

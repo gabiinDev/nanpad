@@ -17,10 +17,18 @@ export type TaskView = "list" | "kanban";
 
 const MAX_TASK_UNDO_STEPS = 5;
 
+export const DEFAULT_PAGE_SIZE = 25;
+export const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
+
 interface TaskStore {
   // ─── Estado ───────────────────────────────────────────────────────────────
   tasks: TaskDTO[];
   allTasks: TaskDTO[];
+  /** Total de tareas que cumplen el filtro (para paginación en vista lista). */
+  total: number;
+  /** Página actual (1-based) en vista lista. */
+  page: number;
+  pageSize: number;
   filters: TaskFilters;
   view: TaskView;
   loading: boolean;
@@ -32,6 +40,8 @@ interface TaskStore {
   // ─── Acciones ─────────────────────────────────────────────────────────────
 
   loadTasks: (uc: AppUseCases) => Promise<void>;
+  setPage: (page: number) => void;
+  setPageSize: (uc: AppUseCases, size: number) => Promise<void>;
   createTask: (uc: AppUseCases, input: CreateTaskInput) => Promise<TaskDTO>;
   updateTask: (uc: AppUseCases, input: UpdateTaskInput) => Promise<void>;
   completeTask: (uc: AppUseCases, taskId: string) => Promise<void>;
@@ -81,6 +91,9 @@ function taskDTOToUpdateInput(dto: TaskDTO): UpdateTaskInput {
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   allTasks: [],
+  total: 0,
+  page: 1,
+  pageSize: DEFAULT_PAGE_SIZE,
   filters: {},
   view: "kanban",
   loading: false,
@@ -91,25 +104,44 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   loadTasks: async (uc) => {
     set({ loading: true, error: null });
     try {
-      const { filters } = get();
-      // Carga en paralelo: tareas filtradas (lista) y todas las tareas (kanban)
-      const [tasks, allTasks] = await Promise.all([
-        uc.listTasks.execute(filters),
-        // Para el kanban siempre necesitamos todas, sin filtro de status
-        filters.status !== undefined
-          ? uc.listTasks.execute({ ...filters, status: undefined })
-          : Promise.resolve([] as TaskDTO[]),
-      ]);
-      // Si no hay filtro de status activo, tasks y allTasks son el mismo resultado
-      set({ tasks, allTasks: filters.status !== undefined ? allTasks : tasks, loading: false });
+      const { filters, view, page, pageSize } = get();
+      if (view === "list") {
+        const result = await uc.listTasks.execute({
+          filters,
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        });
+        set({
+          tasks: result.tasks,
+          allTasks: result.tasks,
+          total: result.total,
+          loading: false,
+        });
+      } else {
+        // Kanban: cargar todas las tareas sin paginación
+        const result = await uc.listTasks.execute({ filters });
+        set({
+          tasks: result.tasks,
+          allTasks: result.tasks,
+          total: result.total,
+          loading: false,
+        });
+      }
     } catch (e) {
       set({ error: String(e), loading: false });
     }
   },
 
+  setPage: (page) => set({ page }),
+
+  setPageSize: async (uc, size) => {
+    set({ pageSize: size, page: 1 });
+    await get().loadTasks(uc);
+  },
+
   createTask: async (uc, input) => {
     const task = await uc.createTask.execute(input);
-    await get().loadTasks(uc);
+    // La lista se actualiza vía Event Bus (task.created) en TasksPage.
     return task;
   },
 
@@ -123,7 +155,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       });
     }
     await uc.updateTask.execute(input);
-    await get().loadTasks(uc);
+    // La lista se actualiza vía Event Bus (task.updated) en TasksPage.
   },
 
   completeTask: async (uc, taskId) => {
@@ -136,7 +168,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       });
     }
     await uc.completeTask.execute(taskId);
-    await get().loadTasks(uc);
+    // La lista se actualiza vía Event Bus (task.completed) en TasksPage.
   },
 
   restoreTask: async (uc, taskId) => {
@@ -149,7 +181,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       });
     }
     await uc.restoreTask.execute(taskId);
-    await get().loadTasks(uc);
+    // La lista se actualiza vía Event Bus (task.restored) en TasksPage.
   },
 
   moveTaskStatus: async (uc, taskId, newStatus) => {
@@ -162,11 +194,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       });
     }
     await uc.moveTaskStatus.execute({ id: taskId, newStatus });
-    await get().loadTasks(uc);
+    // La lista se actualiza vía Event Bus (task.status_changed) en TasksPage.
   },
 
   setFilters: async (uc, filters) => {
-    set({ filters });
+    set({ filters, page: 1 });
     await get().loadTasks(uc);
   },
 

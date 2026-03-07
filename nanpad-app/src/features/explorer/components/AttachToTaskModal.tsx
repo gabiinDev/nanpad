@@ -30,7 +30,7 @@ export function AttachToTaskModal({ payload, onClose, onAttached }: AttachToTask
   const [error, setError] = useState("");
 
   useEffect(() => {
-    uc.listTasks.execute({}).then(setTasks).finally(() => setLoading(false));
+    uc.listTasks.execute({}).then((r) => setTasks(r.tasks)).finally(() => setLoading(false));
   }, [uc.listTasks]);
 
   const filtered = query.trim()

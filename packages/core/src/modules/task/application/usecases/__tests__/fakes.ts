@@ -26,7 +26,10 @@ export class InMemoryTaskRepository implements ITaskRepository {
     return this.tasks.get(id) ?? null;
   }
 
-  async findAll(filters?: TaskFilters): Promise<Task[]> {
+  async findAll(
+    filters?: TaskFilters,
+    pagination?: { limit: number; offset: number }
+  ): Promise<{ tasks: Task[]; total: number }> {
     let results = [...this.tasks.values()];
 
     if (filters?.status !== undefined) {
@@ -57,7 +60,11 @@ export class InMemoryTaskRepository implements ITaskRepository {
       );
     }
 
-    return results;
+    const total = results.length;
+    if (pagination) {
+      results = results.slice(pagination.offset, pagination.offset + pagination.limit);
+    }
+    return { tasks: results, total };
   }
 
   async delete(id: EntityId): Promise<void> {

@@ -11,7 +11,7 @@
  * - Categorizar automáticamente
  */
 
-import type { TaskDTO, TaskFilters, CreateTaskInput, UpdateTaskInput, MoveTaskStatusInput } from "@modules/task/application/dtos/TaskDTO";
+import type { TaskDTO, ListTasksInput, ListTasksResult, CreateTaskInput, UpdateTaskInput, MoveTaskStatusInput } from "@modules/task/application/dtos/TaskDTO";
 import type { CreateDocumentInput, DocumentDTO, DocumentWithContentDTO, GetDocumentInput, ListDocumentsInput } from "@modules/document/application/dtos/DocumentDTO";
 import type { CategoryDTO, ListCategoriesInput } from "@modules/category/application/dtos/CategoryDTO";
 
@@ -37,7 +37,7 @@ export interface ICompleteTask {
 
 /** Interfaz del UseCase ListTasks. */
 export interface IListTasks {
-  execute(filters?: TaskFilters): Promise<TaskDTO[]>;
+  execute(input?: ListTasksInput): Promise<ListTasksResult>;
 }
 
 /** Interfaz del UseCase MoveTaskStatus. */
@@ -238,16 +238,19 @@ export class McpServer {
         },
       },
       async (params) => {
-        return this.deps.listTasks.execute({
-          status: optString(params.status) as
-            | "todo"
-            | "in_progress"
-            | "done"
-            | "archived"
-            | undefined,
-          categoryId: optString(params.categoryId),
-          text: optString(params.text),
+        const result = await this.deps.listTasks.execute({
+          filters: {
+            status: optString(params.status) as
+              | "todo"
+              | "in_progress"
+              | "done"
+              | "archived"
+              | undefined,
+            categoryId: optString(params.categoryId),
+            text: optString(params.text),
+          },
         });
+        return result.tasks;
       }
     );
   }

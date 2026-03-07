@@ -65,7 +65,7 @@ export function CommandPalette() {
     setLoading(true);
     uc.listTasks
       .execute({})
-      .then((list) => setTasks(list.slice(0, 50)))
+      .then((result) => setTasks(result.tasks.slice(0, 50)))
       .finally(() => setLoading(false));
   }, [open, uc.listTasks]);
 

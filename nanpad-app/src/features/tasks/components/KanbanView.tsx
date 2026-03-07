@@ -4,7 +4,7 @@
  * tarjetas con glow de prioridad al hover.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import type { TaskDTO } from "@nanpad/core";
 import { PriorityBadge } from "@ui/components/Badge.tsx";
 import { CategoryBadge } from "@ui/components/CategoryBadge.tsx";
@@ -51,7 +51,7 @@ const PRIORITY_BORDER: Record<number, string> = {
 const DT_KEY = "nanpad/task-id";
 
 /** Tarjeta arrastrable con glow de prioridad y estética técnica. */
-function KanbanCard({
+const KanbanCard = memo(function KanbanCard({
   task,
   categories,
   onEdit,
@@ -220,10 +220,10 @@ function KanbanCard({
       )}
     </div>
   );
-}
+});
 
 /** Columna con header tipo comentario de código y borde luminoso al recibir drop. */
-function KanbanColumn({
+const KanbanColumn = memo(function KanbanColumn({
   column,
   tasks,
   categories,
@@ -374,7 +374,7 @@ function KanbanColumn({
     )}
     </>
   );
-}
+});
 
 /** Vista Kanban principal. */
 export function KanbanView({ tasks, categories, onEdit, onMoveStatus, onAddTask, onShowHistory, onToggleSubtask }: KanbanViewProps) {

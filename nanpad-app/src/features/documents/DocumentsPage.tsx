@@ -150,8 +150,13 @@ export default function DocumentsPage({ isDark }: DocumentsPageProps) {
       </aside>
 
       {/* ─── Editor ──────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-hidden">
-        {activeDocument ? (
+      <div className="relative flex-1 overflow-hidden">
+        {loading && !activeDocument ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-[var(--color-text-muted)]">
+            <Spinner />
+            <span className="text-sm">Cargando documento…</span>
+          </div>
+        ) : activeDocument ? (
           <DocumentEditor
             key={activeDocument.id}
             document={activeDocument}

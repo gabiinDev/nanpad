@@ -56,6 +56,21 @@ export interface TaskFilters {
   text?: string;
 }
 
+/** Input para ListTasks (filtros + paginación opcional). */
+export interface ListTasksInput {
+  filters?: TaskFilters;
+  /** Límite de resultados (p. ej. 25). Si no se indica, se devuelven todos. */
+  limit?: number;
+  /** Desplazamiento para paginación (p. ej. (page - 1) * limit). */
+  offset?: number;
+}
+
+/** Resultado de ListTasks con total para paginación. */
+export interface ListTasksResult {
+  tasks: TaskDTO[];
+  total: number;
+}
+
 /** Input para CreateTask. */
 export interface CreateTaskInput {
   title: string;

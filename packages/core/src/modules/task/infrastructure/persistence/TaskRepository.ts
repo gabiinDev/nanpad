@@ -29,11 +29,15 @@ export interface ITaskRepository {
   findById(id: EntityId): Promise<Task | null>;
 
   /**
-   * Lista tareas aplicando filtros opcionales.
+   * Lista tareas aplicando filtros opcionales y paginación opcional.
    * @param filters - Filtros a aplicar.
-   * @returns Array de tareas que coinciden con los filtros.
+   * @param pagination - Si se indica, devuelve solo la página pedida y el total de filas.
+   * @returns Objeto con tasks y total (total de registros que cumplen el filtro).
    */
-  findAll(filters?: TaskFilters): Promise<Task[]>;
+  findAll(
+    filters?: TaskFilters,
+    pagination?: { limit: number; offset: number }
+  ): Promise<{ tasks: Task[]; total: number }>;
 
   /**
    * Elimina una tarea por su ID.

@@ -5,8 +5,8 @@
 
 import { create } from "zustand";
 import type { AppUseCases } from "@app/composition.ts";
-import type { AppSettings } from "@/infrastructure/appSettingsPersistence.ts";
-import { DEFAULTS } from "@/infrastructure/appSettingsPersistence.ts";
+import type { AppSettingsDTO } from "@nanpad/core";
+import { AppSettingsDefaults as DEFAULTS } from "@nanpad/core";
 
 function applyThemeToDocument(
   theme: "light" | "dark",
@@ -21,7 +21,7 @@ function applyThemeToDocument(
 // Aplicar tema por defecto al cargar el módulo (evita flash antes de load desde DB)
 applyThemeToDocument(DEFAULTS.theme, DEFAULTS.high_performance);
 
-interface AppSettingsStore extends AppSettings {
+interface AppSettingsStore extends AppSettingsDTO {
   loaded: boolean;
 
   /** Carga preferencias desde DB y aplica tema. */

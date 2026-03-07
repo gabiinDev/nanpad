@@ -108,6 +108,20 @@ export type {
   IHistoryRepository,
 } from "./modules/history/application/index";
 
+// ─── Módulo Settings ─────────────────────────────────────────────────────────
+export {
+  GetAppSettings,
+  SaveAppSetting,
+  DEFAULTS as AppSettingsDefaults,
+  AppSettingsSqliteRepository,
+} from "./modules/settings/application/index";
+export type {
+  AppSettingsKey,
+  AppSettingsDTO,
+  SaveAppSettingInput,
+  IAppSettingsRepository,
+} from "./modules/settings/application/index";
+
 // ─── Módulo Category ─────────────────────────────────────────────────────────
 export {
   CreateCategory,
@@ -139,7 +153,6 @@ export {
   AttachCodeToTask,
   ListCodeSnippetsForTask,
   DeleteCodeSnippet,
-  GetTaskHistory,
   TaskSqliteRepository,
 } from "./modules/task/application/index";
 export type {
@@ -147,6 +160,8 @@ export type {
   SubtaskDTO,
   CodeSnippetDTO,
   TaskFilters,
+  ListTasksInput,
+  ListTasksResult,
   CreateTaskInput,
   UpdateTaskInput,
   MoveTaskStatusInput,

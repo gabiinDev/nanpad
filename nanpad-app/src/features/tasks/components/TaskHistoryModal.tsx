@@ -89,8 +89,8 @@ export function TaskHistoryModal({ taskId, taskTitle, onClose }: TaskHistoryModa
     let cancelled = false;
     setLoading(true);
     setError("");
-    uc.getTaskHistory
-      .execute(taskId)
+    uc.getEntityHistory
+      .execute({ entityType: "task", entityId: taskId })
       .then((list) => {
         if (!cancelled) setEntries(list);
       })
@@ -101,7 +101,7 @@ export function TaskHistoryModal({ taskId, taskTitle, onClose }: TaskHistoryModa
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [uc.getTaskHistory, taskId]);
+  }, [uc.getEntityHistory, taskId]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

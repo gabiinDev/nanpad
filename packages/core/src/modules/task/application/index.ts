@@ -17,14 +17,14 @@ export { DeleteSubtask } from "./usecases/DeleteSubtask";
 export { AttachCodeToTask } from "./usecases/AttachCodeToTask";
 export { ListCodeSnippetsForTask } from "./usecases/ListCodeSnippetsForTask";
 export { DeleteCodeSnippet } from "./usecases/DeleteCodeSnippet";
-export { GetTaskHistory } from "./usecases/GetTaskHistory";
-
 // ─── DTOs (contratos de datos) ───────────────────────────────────────────────
 export type {
   TaskDTO,
   SubtaskDTO,
   CodeSnippetDTO,
   TaskFilters,
+  ListTasksInput,
+  ListTasksResult,
   CreateTaskInput,
   UpdateTaskInput,
   MoveTaskStatusInput,

@@ -1,12 +1,13 @@
 /**
  * Preview de Markdown con soporte Mermaid.
- * Usa marked para el render HTML y mermaid para diagramas.
- * Los diagramas Mermaid se reservan con placeholder y se muestran al terminar para evitar salto visual.
+ * Parse asíncrono para no bloquear el hilo principal en documentos grandes.
+ * Muestra estado de carga mientras parsea.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { marked } from "marked";
 import mermaid from "mermaid";
+import { Spinner } from "@ui/components/Spinner.tsx";
 
 interface MarkdownPreviewProps {
   content: string;
@@ -33,26 +34,62 @@ function ensureMermaid(isDark: boolean) {
 }
 
 /**
+ * Parsea Markdown a HTML de forma asíncrona.
+ * @param content - Texto en Markdown.
+ * @returns HTML resultante.
+ */
+/** Parsea Markdown a HTML sin bloquear el hilo (siempre resuelve con string). */
+async function parseMarkdownAsync(content: string): Promise<string> {
+  const result = marked.parse(content, { async: true });
+  const html = await Promise.resolve(result);
+  return typeof html === "string" ? html : "";
+}
+
+/**
  * Componente de preview de Markdown.
+ * Parse siempre asíncrono; muestra "Cargando…" mientras tanto.
  * Detecta bloques ```mermaid y los renderiza como diagramas SVG.
- * Usa placeholder con altura mínima y fade-in al cargar para evitar el salto al renderizar.
  */
 export function MarkdownPreview({ content, className = "" }: MarkdownPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
 
+  // Parse markdown y guardar HTML en estado para que se renderice en el div que ya está montado.
   useEffect(() => {
-    if (!containerRef.current) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setHtmlContent(null);
 
+    parseMarkdownAsync(content)
+      .then((html) => {
+        if (cancelled) return;
+        setHtmlContent(html);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Error al renderizar");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [content]);
+
+  // Sustituir bloques Mermaid por diagramas una vez el HTML está en el DOM.
+  useEffect(() => {
+    if (htmlContent === null || !containerRef.current) return;
+
+    const container = containerRef.current;
     const isDark = document.documentElement.classList.contains("dark");
     ensureMermaid(isDark);
 
-    // Renderizar Markdown → HTML
-    const html = marked.parse(content, { async: false }) as string;
-    containerRef.current.innerHTML = html;
-
-    // Encontrar bloques Mermaid (el nodo es <code>, el contenedor a reemplazar es <pre>)
-    const mermaidBlocks = containerRef.current.querySelectorAll("code.language-mermaid");
+    const mermaidBlocks = container.querySelectorAll("code.language-mermaid");
+    let cancelled = false;
     mermaidBlocks.forEach(async (block, i) => {
+      if (cancelled) return;
       const code = block.textContent ?? "";
       const pre = block.closest("pre");
       if (!pre) return;
@@ -65,16 +102,41 @@ export function MarkdownPreview({ content, className = "" }: MarkdownPreviewProp
 
       try {
         const { svg } = await mermaid.render(id, code);
-        wrapper.innerHTML = svg;
-        wrapper.classList.remove("mermaid-diagram--loading");
-        wrapper.setAttribute("aria-busy", "false");
+        if (!cancelled) {
+          wrapper.innerHTML = svg;
+          wrapper.classList.remove("mermaid-diagram--loading");
+          wrapper.setAttribute("aria-busy", "false");
+        }
       } catch {
-        wrapper.innerHTML = `<pre class="rounded-lg bg-[var(--color-surface-active)] p-4 text-sm text-[var(--color-text-muted)]"><code>${escapeHtml(code)}</code></pre>`;
-        wrapper.classList.remove("mermaid-diagram--loading");
-        wrapper.setAttribute("aria-busy", "false");
+        if (!cancelled) {
+          wrapper.innerHTML = `<pre class="rounded-lg bg-[var(--color-surface-active)] p-4 text-sm text-[var(--color-text-muted)]"><code>${escapeHtml(code)}</code></pre>`;
+          wrapper.classList.remove("mermaid-diagram--loading");
+          wrapper.setAttribute("aria-busy", "false");
+        }
       }
     });
-  }, [content]);
+
+    return () => { cancelled = true; };
+  }, [htmlContent]);
+
+  if (loading) {
+    return (
+      <div className={`flex min-h-[120px] items-center justify-center ${className}`} aria-busy="true">
+        <div className="flex flex-col items-center gap-2 text-[var(--color-text-muted)]">
+          <Spinner />
+          <span className="text-sm">Cargando vista previa…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`rounded-lg border border-[var(--color-priority-high)] bg-[var(--color-surface-2)] p-4 text-sm text-[var(--color-priority-high)] ${className}`}>
+        Error al renderizar: {error}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -97,6 +159,7 @@ export function MarkdownPreview({ content, className = "" }: MarkdownPreviewProp
         [&_th]:border [&_th]:border-[var(--color-border)] [&_th]:px-3 [&_th]:py-2 [&_th]:bg-[var(--color-surface-hover)] [&_th]:text-left [&_th]:text-xs [&_th]:font-semibold
         [&_td]:border [&_td]:border-[var(--color-border)] [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm
         ${className}`}
+      dangerouslySetInnerHTML={{ __html: htmlContent ?? "" }}
     />
   );
 }

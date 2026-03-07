@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { CategoryDTO } from "@nanpad/core";
 import type { AppUseCases } from "@app/composition.ts";
+import { useCategoryStore } from "@/store/useCategoryStore.ts";
 import { IconClose, IconEdit, IconDelete, IconPlus, IconCheck } from "@ui/icons/index.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
 import { CategoryBadge } from "@ui/components/CategoryBadge.tsx";
@@ -83,6 +84,7 @@ const CATEGORY_COLORS = [
 ];
 
 export function CategoriesSection({ uc, categories, loadCategories, onCloseRequest }: CategoriesSectionProps) {
+  const loading = useCategoryStore((s) => s.loading);
   const [editing, setEditing] = useState<CategoryDTO | null>(null);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState<string>(CATEGORY_COLORS[0]);
@@ -263,7 +265,12 @@ export function CategoriesSection({ uc, categories, loadCategories, onCloseReque
 
       {/* Lista de categorías */}
       <div className="space-y-2">
-        {categories.length === 0 ? (
+        {loading && categories.length === 0 ? (
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/50 px-4 py-6 text-sm text-[var(--color-text-muted)]">
+            <Spinner className="h-4 w-4" />
+            <span>Cargando categorías…</span>
+          </div>
+        ) : categories.length === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/50 px-4 py-3 text-center text-sm text-[var(--color-text-muted)]">
             No hay categorías. Crea una para empezar.
           </p>

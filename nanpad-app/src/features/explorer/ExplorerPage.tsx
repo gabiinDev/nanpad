@@ -14,6 +14,7 @@ import { useExplorerStore, getSessionFromStore, type PersistedSession } from "@/
 import { useExplorerFloatingSearchStore } from "@/store/useExplorerFloatingSearchStore.ts";
 import { loadAllTempFiles, openFolderDialog } from "@/infrastructure/FsService.ts";
 import { homeDir } from "@tauri-apps/api/path";
+import { Spinner } from "@ui/components/Spinner.tsx";
 import { FileTree } from "./components/FileTree.tsx";
 import { TabBar } from "./components/TabBar.tsx";
 import { EditorPanel, EditorEmpty } from "./components/EditorPanel.tsx";
@@ -197,8 +198,9 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
 
   if (!initialized) {
     return (
-      <div className="flex h-full items-center justify-center gap-2.5 text-[var(--color-text-muted)]">
-        <span className="opacity-50">Cargando explorador…</span>
+      <div className="flex h-full flex-col items-center justify-center gap-3 text-[var(--color-text-muted)]">
+        <Spinner />
+        <span className="text-sm opacity-80">Cargando explorador…</span>
       </div>
     );
   }

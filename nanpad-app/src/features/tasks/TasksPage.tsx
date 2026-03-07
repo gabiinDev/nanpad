@@ -7,7 +7,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore.ts";
 import { useApp } from "@app/AppContext.tsx";
-import { useTaskStore } from "@/store/useTaskStore.ts";
+import { useTaskStore, PAGE_SIZE_OPTIONS } from "@/store/useTaskStore.ts";
 import { useToastStore } from "@/store/useToastStore.ts";
 import { useCategoryStore } from "@/store/useCategoryStore.ts";
 import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
@@ -48,6 +48,9 @@ export default function TasksPage() {
   const {
     tasks,
     allTasks,
+    total,
+    page,
+    pageSize,
     filters,
     view,
     loading,
@@ -59,6 +62,8 @@ export default function TasksPage() {
     moveTaskStatus,
     setFilters,
     setView,
+    setPage,
+    setPageSize,
     taskUndoStack,
     taskRedoStack,
     replaceTask,
@@ -83,6 +88,17 @@ export default function TasksPage() {
       setTaskUndoStacks(session.undo, session.redo);
     });
   }, [uc]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Suscripción al Event Bus: refrescar lista cuando cambien tareas (crear, actualizar, eliminar, cambio de estado).
+  // Así la UI se actualiza también cuando los cambios vienen de MCP u otras fuentes.
+  useEffect(() => {
+    const unsubs: (() => void)[] = [];
+    const refresh = () => { void loadTasks(uc); };
+    ["task.created", "task.updated", "task.deleted", "task.status_changed", "task.completed", "task.restored"].forEach((type) => {
+      unsubs.push(uc.eventBus.on(type, refresh));
+    });
+    return () => { unsubs.forEach((u) => u()); };
+  }, [uc, loadTasks]);
 
   // Registrar foco del buscador para Ctrl+U
   useEffect(() => {
@@ -243,7 +259,7 @@ export default function TasksPage() {
                   <button
                     key={v}
                     type="button"
-                    onClick={() => { setView(v); }}
+                    onClick={() => { setView(v); void loadTasks(uc); }}
                     className="min-h-[2.75rem] rounded px-3 py-1 text-[0.8125rem] transition-all duration-150"
                     style={{
                       background: active ? "var(--color-accent-subtle)" : "transparent",
@@ -303,17 +319,59 @@ export default function TasksPage() {
             <Spinner />
           </div>
         ) : view === "list" ? (
-          <TaskListView
-            tasks={filteredTasks}
-            categories={categories}
-            onEdit={setEditingTask}
-            onComplete={(id) => { void completeTask(uc, id).then(() => useToastStore.getState().toast("Tarea completada")); }}
-            onRestore={(id) => { void restoreTask(uc, id).then(() => useToastStore.getState().toast("Tarea restaurada")); }}
-            onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status).then(() => useToastStore.getState().toast("Estado actualizado")); }}
-            onAddTask={() => setEditingTask(null)}
-            onShowHistory={setHistoryTask}
-            onToggleSubtask={handleToggleSubtask}
-          />
+          <div className="flex h-full flex-col">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <TaskListView
+                tasks={filteredTasks}
+                categories={categories}
+                onEdit={setEditingTask}
+                onComplete={(id) => { void completeTask(uc, id).then(() => useToastStore.getState().toast("Tarea completada")); }}
+                onRestore={(id) => { void restoreTask(uc, id).then(() => useToastStore.getState().toast("Tarea restaurada")); }}
+                onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status).then(() => useToastStore.getState().toast("Estado actualizado")); }}
+                onAddTask={() => setEditingTask(null)}
+                onShowHistory={setHistoryTask}
+                onToggleSubtask={handleToggleSubtask}
+              />
+            </div>
+            {/* Controles de paginación (solo vista lista) */}
+            {total > 0 && (
+              <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--color-text-muted)]">Tamaño:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { void setPageSize(uc, Number(e.target.value)); }}
+                    className="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    Página {page} de {Math.max(1, Math.ceil(total / pageSize))}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={page <= 1 || loading}
+                    onClick={() => { setPage(page - 1); void loadTasks(uc); }}
+                    className="min-h-[2rem] rounded border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] disabled:opacity-50 hover:bg-[var(--color-surface-active)]"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={page >= Math.ceil(total / pageSize) || loading}
+                    onClick={() => { setPage(page + 1); void loadTasks(uc); }}
+                    className="min-h-[2rem] rounded border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-secondary)] disabled:opacity-50 hover:bg-[var(--color-surface-active)]"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <KanbanView
             tasks={filteredAllTasks}

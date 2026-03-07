@@ -10,6 +10,7 @@ import { SqliteAdapter } from "@/infrastructure/SqliteAdapter.ts";
 import { buildComposition, type AppUseCases } from "@app/composition.ts";
 import { AppProvider } from "@app/AppContext.tsx";
 import Shell from "@app/Shell.tsx";
+import { ErrorBoundary } from "@ui/components/ErrorBoundary.tsx";
 
 type AppState = "loading" | "ready" | "error";
 
@@ -68,7 +69,9 @@ export default function App() {
 
   return (
     <AppProvider useCases={useCases!}>
-      <Shell />
+      <ErrorBoundary>
+        <Shell />
+      </ErrorBoundary>
     </AppProvider>
   );
 }

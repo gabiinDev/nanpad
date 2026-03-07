@@ -80,9 +80,9 @@ export class FakeListTasks {
   calls: unknown[] = [];
   private result: TaskDTO[];
   constructor(result?: TaskDTO[]) { this.result = result ?? [makeTaskDTO()]; }
-  async execute(filters?: unknown): Promise<TaskDTO[]> {
-    this.calls.push(filters);
-    return this.result;
+  async execute(input?: unknown): Promise<{ tasks: TaskDTO[]; total: number }> {
+    this.calls.push(input);
+    return { tasks: this.result, total: this.result.length };
   }
 }
 

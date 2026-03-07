@@ -66,7 +66,10 @@ export async function listDir(dirPath: string): Promise<FsNode[]> {
   let entries: DirEntry[];
   try {
     entries = await readDir(dirPath);
-  } catch {
+  } catch (e) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[FsService] listDir failed:", dirPath, e);
+    }
     return [];
   }
 
@@ -221,8 +224,10 @@ export async function readTempFile(tempId: string): Promise<string> {
 export async function deleteTempFile(tempId: string): Promise<void> {
   try {
     await remove(`${TEMP_DIR}/${tempId}.txt`, { baseDir: BaseDirectory.AppLocalData });
-  } catch {
-    // Si no existe, ignorar
+  } catch (e) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[FsService] deleteTempFile failed:", tempId, e);
+    }
   }
 }
 
@@ -241,7 +246,10 @@ export async function loadAllTempFiles(): Promise<TempFileMeta[]> {
   let entries: DirEntry[];
   try {
     entries = await readDir(TEMP_DIR, { baseDir: BaseDirectory.AppLocalData });
-  } catch {
+  } catch (e) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[FsService] loadAllTempFiles readDir failed:", e);
+    }
     return [];
   }
 
@@ -252,8 +260,10 @@ export async function loadAllTempFiles(): Promise<TempFileMeta[]> {
     try {
       const content = await readTempFile(tempId);
       result.push({ tempId, content });
-    } catch {
-      // Ignorar archivos ilegibles
+    } catch (e) {
+      if (typeof console !== "undefined" && console.warn) {
+        console.warn("[FsService] loadAllTempFiles readTempFile failed:", tempId, e);
+      }
     }
   }
   return result;
@@ -277,7 +287,10 @@ export async function createNewTempFile(): Promise<string> {
 export async function fileExists(path: string): Promise<boolean> {
   try {
     return await invoke<boolean>("check_file_exists", { path });
-  } catch {
+  } catch (e) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[FsService] fileExists failed:", path, e);
+    }
     return false;
   }
 }

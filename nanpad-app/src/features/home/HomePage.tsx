@@ -49,13 +49,13 @@ export default function HomePage() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
-      uc.listTasks.execute({ status: ["todo", "in_progress"] }),
-      uc.listTasks.execute({ status: "done" }),
+      uc.listTasks.execute({ filters: { status: ["todo", "in_progress"] } }),
+      uc.listTasks.execute({ filters: { status: "done" } }),
     ])
-      .then(([activeList, doneList]) => {
+      .then(([activeResult, doneResult]) => {
         if (!cancelled) {
-          setTasks(activeList.slice(0, MAX_TASKS));
-          setDoneCount(doneList.length);
+          setTasks(activeResult.tasks.slice(0, MAX_TASKS));
+          setDoneCount(doneResult.tasks.length);
         }
       })
       .finally(() => {

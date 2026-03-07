@@ -6,6 +6,7 @@
 
 import {
   EventBus,
+  type IEventBus,
   // Shared
   type IDatabase,
   // Task
@@ -22,7 +23,6 @@ import {
   AttachCodeToTask,
   ListCodeSnippetsForTask,
   DeleteCodeSnippet,
-  GetTaskHistory,
   // Category
   CategorySqliteRepository,
   CreateCategory,
@@ -47,7 +47,12 @@ import {
   ExportWorkspace,
   ImportWorkspace,
   BackupNow,
+  // Settings
+  GetAppSettings,
+  SaveAppSetting,
+  AppSettingsSqliteRepository,
 } from "@nanpad/core";
+import type { AppSettingsDTO, AppSettingsKey } from "@nanpad/core";
 import { SqliteStorageAdapter } from "@/infrastructure/SqliteStorageAdapter.ts";
 import {
   loadExplorerSessionFromDb,
@@ -59,12 +64,6 @@ import {
   saveTaskUndoSessionToDb,
   type TaskUndoSession,
 } from "@/infrastructure/taskUndoPersistence.ts";
-import {
-  loadAppSettingsFromDb,
-  saveAppSettingToDb,
-  type AppSettings,
-  type AppSettingsKey,
-} from "@/infrastructure/appSettingsPersistence.ts";
 
 /** Conjunto de todos los UseCases disponibles en la app. */
 export interface AppUseCases {
@@ -81,7 +80,6 @@ export interface AppUseCases {
   attachCodeToTask: AttachCodeToTask;
   listCodeSnippetsForTask: ListCodeSnippetsForTask;
   deleteCodeSnippet: DeleteCodeSnippet;
-  getTaskHistory: GetTaskHistory;
   // Category
   createCategory: CreateCategory;
   updateCategory: UpdateCategory;
@@ -108,9 +106,11 @@ export interface AppUseCases {
   // Tareas: pilas undo/redo (tope 5)
   loadTaskUndoSession: () => Promise<TaskUndoSession>;
   saveTaskUndoSession: (session: TaskUndoSession) => Promise<void>;
-  // Preferencias de app (tema, ayuda, vista por defecto tareas)
-  loadAppSettings: () => Promise<AppSettings>;
+  // Preferencias de app (tema, ayuda, vista por defecto tareas) — UseCases del módulo Settings
+  loadAppSettings: () => Promise<AppSettingsDTO>;
   saveAppSetting: (key: AppSettingsKey, value: string | boolean) => Promise<void>;
+  /** Event Bus para suscripciones desde la UI (p. ej. refrescar lista al crear/actualizar tarea). */
+  eventBus: IEventBus;
 }
 
 /**
@@ -140,7 +140,6 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const attachCodeToTask = new AttachCodeToTask(taskRepository);
   const listCodeSnippetsForTask = new ListCodeSnippetsForTask(taskRepository);
   const deleteCodeSnippet = new DeleteCodeSnippet(taskRepository);
-  const getTaskHistory = new GetTaskHistory(historyRepository);
 
   // ─── UseCases de Category ────────────────────────────────────────────────────
   const createCategory = new CreateCategory(categoryRepository, eventBus);
@@ -181,10 +180,16 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const saveTaskUndoSession = (session: TaskUndoSession): Promise<void> =>
     saveTaskUndoSessionToDb(db, session);
 
-  // ─── Preferencias de app (SQLite) ────────────────────────────────────────────
-  const loadAppSettings = (): Promise<AppSettings> => loadAppSettingsFromDb(db);
+  // ─── Preferencias de app (módulo Settings en core, repositorio SQLite) ─────
+  const appSettingsRepository = new AppSettingsSqliteRepository(db);
+  const getAppSettings = new GetAppSettings(appSettingsRepository);
+  const saveAppSettingUseCase = new SaveAppSetting(appSettingsRepository);
+  const loadAppSettings = (): Promise<AppSettingsDTO> => getAppSettings.execute();
   const saveAppSetting = (key: AppSettingsKey, value: string | boolean): Promise<void> =>
-    saveAppSettingToDb(db, key, value);
+    saveAppSettingUseCase.execute({ key, value });
+
+  // ─── Event Bus (expuesto para suscripciones desde la UI) ───────────────────────
+  // Ya instanciado arriba como eventBus.
 
   // ─── MCP Server ──────────────────────────────────────────────────────────────
   const mcpServer = new McpServer({
@@ -212,7 +217,6 @@ export function buildComposition(db: IDatabase): AppUseCases {
     attachCodeToTask,
     listCodeSnippetsForTask,
     deleteCodeSnippet,
-    getTaskHistory,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -234,5 +238,6 @@ export function buildComposition(db: IDatabase): AppUseCases {
     saveTaskUndoSession,
     loadAppSettings,
     saveAppSetting,
+    eventBus,
   };
 }

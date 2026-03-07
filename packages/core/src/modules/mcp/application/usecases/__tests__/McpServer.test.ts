@@ -195,8 +195,8 @@ describe("Tool: list_tasks", () => {
       params: { status: "done" },
     });
 
-    const call = listTasks.calls[0] as { status: string };
-    expect(call.status).toBe("done");
+    const call = listTasks.calls[0] as { filters?: { status?: string } };
+    expect(call.filters?.status).toBe("done");
   });
 });
 

@@ -108,6 +108,24 @@ describe("GetEntityHistory", () => {
     expect(result[0].action).toBe("create");
     expect(result[1].action).toBe("update");
   });
+
+  it("GetEntityHistory con 1000 entradas responde en menos de 300 ms (performance)", async () => {
+    for (let i = 0; i < 1000; i++) {
+      await recordChange.execute({
+        entityType: "task",
+        entityId: "task-perf",
+        action: "update",
+        fieldName: "title",
+        oldValue: `v${i}`,
+        newValue: `v${i + 1}`,
+      });
+    }
+    const start = performance.now();
+    const result = await getHistory.execute({ entityType: "task", entityId: "task-perf" });
+    const elapsed = performance.now() - start;
+    expect(result).toHaveLength(1000);
+    expect(elapsed).toBeLessThan(300);
+  }, 10_000);
 });
 
 describe("HistoryEventListener", () => {

@@ -63,7 +63,8 @@ describe("ListTasks", () => {
     await create.execute({ title: "B" });
 
     const result = await list.execute();
-    expect(result).toHaveLength(2);
+    expect(result.tasks).toHaveLength(2);
+    expect(result.total).toBe(2);
   });
 
   it("filtra por estado", async () => {
@@ -73,26 +74,53 @@ describe("ListTasks", () => {
     const completeUC = new CompleteTask(repo, bus);
     await completeUC.execute(dto.id);
 
-    const todos = await list.execute({ status: "todo" });
-    const dones = await list.execute({ status: "done" });
+    const todos = await list.execute({ filters: { status: "todo" } });
+    const dones = await list.execute({ filters: { status: "done" } });
 
-    expect(todos).toHaveLength(1);
-    expect(dones).toHaveLength(1);
+    expect(todos.tasks).toHaveLength(1);
+    expect(dones.tasks).toHaveLength(1);
   });
 
   it("filtra por texto (título)", async () => {
     await create.execute({ title: "Revisar código" });
     await create.execute({ title: "Reunión equipo" });
 
-    const result = await list.execute({ text: "código" });
-    expect(result).toHaveLength(1);
-    expect(result[0].title).toContain("código");
+    const result = await list.execute({ filters: { text: "código" } });
+    expect(result.tasks).toHaveLength(1);
+    expect(result.tasks[0].title).toContain("código");
   });
 
   it("retorna array vacío cuando no hay tareas", async () => {
     const result = await list.execute();
-    expect(result).toHaveLength(0);
+    expect(result.tasks).toHaveLength(0);
+    expect(result.total).toBe(0);
   });
+
+  it("respeta paginación limit/offset", async () => {
+    await create.execute({ title: "1" });
+    await create.execute({ title: "2" });
+    await create.execute({ title: "3" });
+
+    const page1 = await list.execute({ limit: 2, offset: 0 });
+    expect(page1.tasks).toHaveLength(2);
+    expect(page1.total).toBe(3);
+
+    const page2 = await list.execute({ limit: 2, offset: 2 });
+    expect(page2.tasks).toHaveLength(1);
+    expect(page2.total).toBe(3);
+  });
+
+  it("ListTasks con 2000 tareas responde en menos de 500 ms (performance)", async () => {
+    for (let i = 0; i < 2000; i++) {
+      await create.execute({ title: `Task ${i}` });
+    }
+    const start = performance.now();
+    const result = await list.execute({ limit: 100, offset: 0 });
+    const elapsed = performance.now() - start;
+    expect(result.tasks).toHaveLength(100);
+    expect(result.total).toBe(2000);
+    expect(elapsed).toBeLessThan(500);
+  }, 10_000);
 });
 
 describe("MoveTaskStatus", () => {

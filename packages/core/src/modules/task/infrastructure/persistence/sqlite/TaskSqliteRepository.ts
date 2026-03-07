@@ -83,10 +83,18 @@ export class TaskSqliteRepository implements ITaskRepository {
     return this.rowToTask(rows[0]);
   }
 
-  async findAll(filters?: TaskFilters): Promise<Task[]> {
-    const { sql, params } = buildFindAllQuery(filters);
-    const rows = await this.db.select<TaskRow[]>(sql, params);
-    return Promise.all(rows.map((r) => this.rowToTask(r)));
+  async findAll(
+    filters?: TaskFilters,
+    pagination?: { limit: number; offset: number }
+  ): Promise<{ tasks: Task[]; total: number }> {
+    const { countSql, dataSql, params } = buildFindAllQuery(filters, pagination);
+    const [countRows, dataRows] = await Promise.all([
+      this.db.select<{ total: number }[]>(countSql, params),
+      this.db.select<TaskRow[]>(dataSql, params),
+    ]);
+    const total = countRows[0]?.total ?? 0;
+    const tasks = await Promise.all(dataRows.map((r) => this.rowToTask(r)));
+    return { tasks, total };
   }
 
   async delete(id: EntityId): Promise<void> {
@@ -249,7 +257,16 @@ function rowToCodeSnippet(row: TaskCodeSnippetRow): CodeSnippet {
   });
 }
 
-function buildFindAllQuery(filters?: TaskFilters): { sql: string; params: unknown[] } {
+interface FindAllQueryResult {
+  countSql: string;
+  dataSql: string;
+  params: unknown[];
+}
+
+function buildFindAllQuery(
+  filters?: TaskFilters,
+  pagination?: { limit: number; offset: number }
+): FindAllQueryResult {
   const conditions: string[] = [];
   const params: unknown[] = [];
   let paramIdx = 1;
@@ -276,23 +293,27 @@ function buildFindAllQuery(filters?: TaskFilters): { sql: string; params: unknow
     paramIdx++;
   }
 
-  let sql = "SELECT DISTINCT t.* FROM tasks t";
-
+  const joins: string[] = [];
   if (filters?.categoryId) {
-    sql += ` JOIN task_categories tc ON tc.task_id = t.id AND tc.category_id = $${paramIdx++}`;
+    joins.push(`JOIN task_categories tc ON tc.task_id = t.id AND tc.category_id = $${paramIdx++}`);
     params.push(filters.categoryId);
   }
-
   if (filters?.tagId) {
-    sql += ` JOIN task_tags tt ON tt.task_id = t.id AND tt.tag_id = $${paramIdx++}`;
+    joins.push(`JOIN task_tags tt ON tt.task_id = t.id AND tt.tag_id = $${paramIdx++}`);
     params.push(filters.tagId);
   }
 
-  if (conditions.length > 0) {
-    sql += ` WHERE ${conditions.join(" AND ")}`;
+  const whereClause = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+  const joinClause = joins.length > 0 ? ` ${joins.join(" ")}` : "";
+  const baseFrom = `FROM tasks t${joinClause}${whereClause}`;
+
+  const countSql = `SELECT COUNT(DISTINCT t.id) AS total ${baseFrom}`;
+
+  let dataSql = `SELECT DISTINCT t.* ${baseFrom} ORDER BY t.sort_order ASC, t.created_at DESC`;
+  if (pagination) {
+    dataSql += ` LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
+    params.push(pagination.limit, pagination.offset);
   }
 
-  sql += " ORDER BY t.sort_order ASC, t.created_at DESC";
-
-  return { sql, params };
+  return { countSql, dataSql, params };
 }

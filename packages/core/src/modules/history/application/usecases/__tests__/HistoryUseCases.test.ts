@@ -80,7 +80,8 @@ describe("GetEntityHistory", () => {
 
   it("returns empty array when entity has no history", async () => {
     const result = await getHistory.execute({ entityType: "task", entityId: "none" });
-    expect(result).toHaveLength(0);
+    expect(result.entries).toHaveLength(0);
+    expect(result.total).toBe(0);
   });
 
   it("returns only entries for the specified entity", async () => {
@@ -88,15 +89,16 @@ describe("GetEntityHistory", () => {
     await recordChange.execute({ entityType: "task", entityId: "task-B", action: "create" });
 
     const result = await getHistory.execute({ entityType: "task", entityId: "task-A" });
-    expect(result).toHaveLength(1);
-    expect(result[0].entityId).toBe("task-A");
+    expect(result.entries).toHaveLength(1);
+    expect(result.total).toBe(1);
+    expect(result.entries[0].entityId).toBe("task-A");
   });
 
   it("returns DTOs with ISO createdAt strings", async () => {
     await recordChange.execute({ entityType: "task", entityId: "t1", action: "create" });
 
     const result = await getHistory.execute({ entityType: "task", entityId: "t1" });
-    expect(result[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(result.entries[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("returns entries for a category", async () => {
@@ -104,9 +106,21 @@ describe("GetEntityHistory", () => {
     await recordChange.execute({ entityType: "category", entityId: "cat-1", action: "update", newValue: "Frontend v2" });
 
     const result = await getHistory.execute({ entityType: "category", entityId: "cat-1" });
-    expect(result).toHaveLength(2);
-    expect(result[0].action).toBe("create");
-    expect(result[1].action).toBe("update");
+    expect(result.entries).toHaveLength(2);
+    expect(result.total).toBe(2);
+    expect(result.entries[0].action).toBe("update");
+    expect(result.entries[1].action).toBe("create");
+  });
+
+  it("respects limit and offset for pagination", async () => {
+    for (let i = 0; i < 5; i++) {
+      await recordChange.execute({ entityType: "task", entityId: "t1", action: "update", newValue: `v${i}` });
+    }
+    const page1 = await getHistory.execute({ entityType: "task", entityId: "t1", limit: 2, offset: 0 });
+    const page2 = await getHistory.execute({ entityType: "task", entityId: "t1", limit: 2, offset: 2 });
+    expect(page1.total).toBe(5);
+    expect(page1.entries).toHaveLength(2);
+    expect(page2.entries).toHaveLength(2);
   });
 
   it("GetEntityHistory con 1000 entradas responde en menos de 300 ms (performance)", async () => {
@@ -123,7 +137,8 @@ describe("GetEntityHistory", () => {
     const start = performance.now();
     const result = await getHistory.execute({ entityType: "task", entityId: "task-perf" });
     const elapsed = performance.now() - start;
-    expect(result).toHaveLength(1000);
+    expect(result.entries).toHaveLength(1000);
+    expect(result.total).toBe(1000);
     expect(elapsed).toBeLessThan(300);
   }, 10_000);
 });

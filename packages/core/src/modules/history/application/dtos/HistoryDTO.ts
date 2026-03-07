@@ -31,4 +31,14 @@ export interface RecordChangeInput {
 export interface GetEntityHistoryInput {
   entityType: string;
   entityId: string;
+  /** Límite de registros por página (por defecto sin límite). */
+  limit?: number;
+  /** Desplazamiento para paginación (por defecto 0). */
+  offset?: number;
+}
+
+/** Resultado paginado de GetEntityHistory. */
+export interface GetEntityHistoryOutput {
+  entries: HistoryEntryDTO[];
+  total: number;
 }

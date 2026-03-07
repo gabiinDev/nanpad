@@ -25,8 +25,10 @@ interface TaskFormProps {
   updateSubtask?: (taskId: string, subtaskId: string, patch: { title?: string; completed?: boolean }) => Promise<void>;
   deleteSubtask?: (taskId: string, subtaskId: string) => Promise<void>;
   onSubtaskChange?: (updatedTask: TaskDTO) => void;
-  /** Solo en edición: abre el modal de historial de la tarea. */
+  /** Solo en edición: abre el modal de historial de la tarea. No mostrar si el formulario va dentro del drawer (tabs). */
   onShowHistory?: () => void;
+  /** 'modal' = overlay centrado (por defecto); 'none' = solo contenido para usar dentro de un drawer. */
+  wrapper?: "modal" | "none";
 }
 
 const PRIORITY_OPTIONS = [
@@ -77,6 +79,7 @@ export function TaskForm({
   deleteSubtask: deleteSubtaskFn,
   onSubtaskChange,
   onShowHistory,
+  wrapper = "modal",
 }: TaskFormProps) {
   const uc = useApp();
   const openFileAtLine = useExplorerStore((s) => s.openFileAtLine);
@@ -221,114 +224,7 @@ export function TaskForm({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose, orphanSnippet]);
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.7)",
-        backdropFilter: "blur(4px)",
-        padding: "2rem 1rem",
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="animate-scale-in"
-        style={{
-          width: "100%",
-          maxWidth: "480px",
-          maxHeight: "calc(100vh - 4rem)",
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--color-surface-2)",
-          border: "1px solid var(--color-border-strong)",
-          borderRadius: "12px",
-          boxShadow: "var(--shadow-xl), var(--shadow-glow-accent)",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "16px 20px 14px",
-            borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-surface)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-text-primary)" }}>
-              {isEditing ? "Editar tarea" : "Nueva tarea"}
-            </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {onShowHistory && (
-                <button
-                  type="button"
-                  onClick={onShowHistory}
-                  aria-label="Ver historial"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    border: "1px solid var(--color-border)",
-                    background: "transparent",
-                    color: "var(--color-text-muted)",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                    transition: "all 0.12s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "var(--color-surface-active)";
-                    (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = "transparent";
-                    (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-                  }}
-                >
-                  <IconClock size={12} />
-                  Historial
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                aria-label="Cerrar"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "24px",
-                height: "24px",
-                borderRadius: "6px",
-                border: "none",
-                background: "transparent",
-                color: "var(--color-text-muted)",
-                cursor: "pointer",
-                fontSize: "16px",
-                lineHeight: 1,
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "var(--color-surface-active)";
-                (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = "transparent";
-                (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
-              }}
-            >
-              <IconClose size={14} />
-            </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Cuerpo */}
+  const formContent = (
         <form
           onSubmit={(e) => { void handleSubmit(e); }}
           style={{
@@ -464,8 +360,8 @@ export function TaskForm({
             </div>
           )}
 
-          {/* Adjuntos de código (solo edición, mostrados como links) */}
-          {isEditing && codeSnippets.length > 0 && (
+          {/* Adjuntos de código (solo edición, mostrados como links + quitar) */}
+          {isEditing && codeSnippets.length > 0 && task && (
             <div>
               <label style={labelStyle}>Adjuntos</label>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -479,9 +375,13 @@ export function TaskForm({
                         ? `línea ${snippet.lineStart}`
                         : `líneas ${snippet.lineStart}–${snippet.lineEnd}`
                       : "";
-                  const label = `${fileName}${lines ? ` (${lines})` : ""}`;
+                  const label = lines
+                    ? `${fileName} (${lines})`
+                    : snippet.filePath
+                      ? `${fileName} (archivo completo)`
+                      : fileName;
                   return (
-                    <li key={snippet.id}>
+                    <li key={snippet.id} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <button
                         type="button"
                         onClick={async () => {
@@ -503,7 +403,8 @@ export function TaskForm({
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
-                          width: "100%",
+                          flex: 1,
+                          minWidth: 0,
                           padding: "6px 10px",
                           background: "var(--color-surface)",
                           border: "1px solid var(--color-border)",
@@ -528,6 +429,45 @@ export function TaskForm({
                       >
                         <IconFileCode size={14} className="shrink-0" />
                         <span className="truncate">{label}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await uc.deleteCodeSnippet.execute({
+                            snippetId: snippet.id,
+                            taskId: task.id,
+                            filePath: snippet.filePath ?? null,
+                          });
+                          setCodeSnippets((prev) => prev.filter((s) => s.id !== snippet.id));
+                        }}
+                        aria-label={`Quitar adjunto ${label}`}
+                        title="Quitar adjunto de la tarea"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "6px 8px",
+                          background: "var(--color-surface)",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "7px",
+                          cursor: "pointer",
+                          color: "var(--color-text-muted)",
+                          transition: "all 0.12s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          const t = e.currentTarget as HTMLButtonElement;
+                          t.style.background = "var(--color-surface-hover)";
+                          t.style.borderColor = "var(--color-priority-high)";
+                          t.style.color = "var(--color-priority-high)";
+                        }}
+                        onMouseLeave={(e) => {
+                          const t = e.currentTarget as HTMLButtonElement;
+                          t.style.background = "var(--color-surface)";
+                          t.style.borderColor = "var(--color-border)";
+                          t.style.color = "var(--color-text-muted)";
+                        }}
+                      >
+                        <IconClose size={14} />
                       </button>
                     </li>
                   );
@@ -567,7 +507,11 @@ export function TaskForm({
                     type="button"
                     onClick={async () => {
                       if (orphanSnippet) {
-                        await uc.deleteCodeSnippet.execute(orphanSnippet.id);
+                        await uc.deleteCodeSnippet.execute({
+                          snippetId: orphanSnippet.id,
+                          taskId: orphanSnippet.taskId,
+                          filePath: orphanSnippet.filePath ?? null,
+                        });
                         setCodeSnippets((prev) => prev.filter((s) => s.id !== orphanSnippet.id));
                         setOrphanSnippet(null);
                       }
@@ -740,6 +684,122 @@ export function TaskForm({
             </button>
           </div>
         </form>
+  );
+
+  if (wrapper === "none") {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {formContent}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.7)",
+        backdropFilter: "blur(4px)",
+        padding: "2rem 1rem",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="animate-scale-in"
+        style={{
+          width: "100%",
+          maxWidth: "480px",
+          maxHeight: "calc(100vh - 4rem)",
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--color-surface-2)",
+          border: "1px solid var(--color-border-strong)",
+          borderRadius: "12px",
+          boxShadow: "var(--shadow-xl), var(--shadow-glow-accent)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 20px 14px",
+            borderBottom: "1px solid var(--color-border)",
+            background: "var(--color-surface)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-text-primary)" }}>
+              {isEditing ? "Editar tarea" : "Nueva tarea"}
+            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {onShowHistory && (
+                <button
+                  type="button"
+                  onClick={onShowHistory}
+                  aria-label="Ver historial"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--color-border)",
+                    background: "transparent",
+                    color: "var(--color-text-muted)",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    transition: "all 0.12s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "var(--color-surface-active)";
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "transparent";
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
+                  }}
+                >
+                  <IconClock size={12} />
+                  Historial
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                aria-label="Cerrar"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "6px",
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  lineHeight: 1,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = "var(--color-surface-active)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--color-text-primary)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "var(--color-text-muted)";
+                }}
+              >
+                <IconClose size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+        {formContent}
       </div>
     </div>
   );

@@ -16,11 +16,21 @@ export class InMemoryHistoryRepository implements IHistoryRepository {
 
   async findByEntity(
     entityType: string,
-    entityId: EntityId
+    entityId: EntityId,
+    options?: { limit?: number; offset?: number }
   ): Promise<HistoryEntry[]> {
-    return [...this.entries.values()]
+    const list = [...this.entries.values()]
       .filter((e) => e.entityType === entityType && e.entityId === entityId)
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const offset = options?.offset ?? 0;
+    const limit = options?.limit;
+    return limit != null ? list.slice(offset, offset + limit) : list.slice(offset);
+  }
+
+  async countByEntity(entityType: string, entityId: EntityId): Promise<number> {
+    return [...this.entries.values()].filter(
+      (e) => e.entityType === entityType && e.entityId === entityId
+    ).length;
   }
 
   async findByEntityType(entityType: string): Promise<HistoryEntry[]> {

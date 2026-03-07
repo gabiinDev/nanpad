@@ -35,6 +35,7 @@ export default {
       animation: {
         'fade-in': 'fadeIn 0.15s ease-out',
         'slide-in': 'slideIn 0.15s ease-out',
+        'drawer-in': 'drawerIn 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -44,6 +45,10 @@ export default {
         slideIn: {
           from: { opacity: '0', transform: 'translateY(-4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        drawerIn: {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
         },
       },
     },

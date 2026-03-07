@@ -134,12 +134,12 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const moveTaskStatus = new MoveTaskStatus(taskRepository, eventBus);
   const completeTask = new CompleteTask(taskRepository, eventBus);
   const restoreTask = new RestoreTask(taskRepository, eventBus);
-  const addSubtask = new AddSubtask(taskRepository);
-  const updateSubtask = new UpdateSubtask(taskRepository);
-  const deleteSubtask = new DeleteSubtask(taskRepository);
-  const attachCodeToTask = new AttachCodeToTask(taskRepository);
+  const addSubtask = new AddSubtask(taskRepository, eventBus);
+  const updateSubtask = new UpdateSubtask(taskRepository, eventBus);
+  const deleteSubtask = new DeleteSubtask(taskRepository, eventBus);
+  const attachCodeToTask = new AttachCodeToTask(taskRepository, eventBus);
   const listCodeSnippetsForTask = new ListCodeSnippetsForTask(taskRepository);
-  const deleteCodeSnippet = new DeleteCodeSnippet(taskRepository);
+  const deleteCodeSnippet = new DeleteCodeSnippet(taskRepository, eventBus);
 
   // ─── UseCases de Category ────────────────────────────────────────────────────
   const createCategory = new CreateCategory(categoryRepository, eventBus);

@@ -13,6 +13,7 @@ export type {
   HistoryEntryDTO,
   RecordChangeInput,
   GetEntityHistoryInput,
+  GetEntityHistoryOutput,
 } from "./dtos/HistoryDTO";
 
 // ─── Tipos de dominio necesarios externamente ────────────────────────────────

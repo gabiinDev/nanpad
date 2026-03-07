@@ -59,10 +59,12 @@ const KanbanCard = memo(function KanbanCard({
   expandedSubtaskIds,
   onToggleExpandSubtasks,
   onToggleSubtask,
+  onShowHistory,
 }: {
   task: TaskDTO;
   categories: import("@nanpad/core").CategoryDTO[];
   onEdit: (t: TaskDTO) => void;
+  onShowHistory?: (t: TaskDTO) => void;
   onContextMenu: (e: React.MouseEvent, t: TaskDTO) => void;
   expandedSubtaskIds: Set<string>;
   onToggleExpandSubtasks: (taskId: string) => void;
@@ -112,16 +114,30 @@ const KanbanCard = memo(function KanbanCard({
         >
           {task.title}
         </p>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onEdit(task); }}
-          title="Editar tarea"
-          aria-label="Editar tarea"
-          className="flex shrink-0 items-center justify-center rounded p-1 transition-colors hover:bg-[var(--color-surface-hover)]"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          <IconEdit size={12} />
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
+          {onShowHistory && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onShowHistory(task); }}
+              title="Ver historial"
+              aria-label="Ver historial"
+              className="flex items-center justify-center rounded p-1 transition-[color,transform,background-color] duration-150 hover:scale-110 hover:bg-[var(--color-surface-hover)] active:scale-95"
+              style={{ color: "var(--color-text-muted)" }}
+            >
+              <IconClock size={12} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+            title="Editar tarea"
+            aria-label="Editar tarea"
+            className="flex items-center justify-center rounded p-1 transition-[color,transform,background-color] duration-150 hover:scale-110 hover:bg-[var(--color-surface-hover)] active:scale-95"
+            style={{ color: "var(--color-text-muted)" }}
+          >
+            <IconEdit size={12} />
+          </button>
+        </div>
       </div>
       {task.description && (
         <p
@@ -157,6 +173,7 @@ const KanbanCard = memo(function KanbanCard({
               e.stopPropagation();
               onToggleExpandSubtasks(task.id);
             }}
+            className="rounded transition-[transform,color,background-color] duration-150 hover:scale-105 hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-secondary)] active:scale-95"
             style={{
               display: "flex",
               alignItems: "center",
@@ -228,6 +245,7 @@ const KanbanColumn = memo(function KanbanColumn({
   tasks,
   categories,
   onEdit,
+  onShowHistory,
   onDrop,
   onContextMenu,
   onAddTask,
@@ -239,6 +257,7 @@ const KanbanColumn = memo(function KanbanColumn({
   tasks: TaskDTO[];
   categories: import("@nanpad/core").CategoryDTO[];
   onEdit: (t: TaskDTO) => void;
+  onShowHistory?: (t: TaskDTO) => void;
   onDrop: (taskId: string, status: TaskDTO["status"]) => void;
   onContextMenu: (e: React.MouseEvent, t: TaskDTO) => void;
   onAddTask?: () => void;
@@ -294,7 +313,7 @@ const KanbanColumn = memo(function KanbanColumn({
       }}
     >
       {/* Header de columna */}
-      <div style={{ marginBottom: "14px" }}>
+      <div style={{ marginBottom: "18px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span
             style={{
@@ -327,14 +346,15 @@ const KanbanColumn = memo(function KanbanColumn({
         />
       </div>
 
-      {/* Tarjetas */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto" }}>
+      {/* Tarjetas — paddingTop para que el hover de la primera card no quede bajo el header */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto", paddingTop: "4px" }}>
         {tasks.map((task) => (
           <KanbanCard
             key={task.id}
             task={task}
             categories={categories}
             onEdit={onEdit}
+            onShowHistory={onShowHistory}
             onContextMenu={onContextMenu}
             expandedSubtaskIds={expandedSubtaskIds}
             onToggleExpandSubtasks={onToggleExpandSubtasks}
@@ -436,6 +456,7 @@ export function KanbanView({ tasks, categories, onEdit, onMoveStatus, onAddTask,
             tasks={tasks.filter((t) => t.status === col.status)}
             categories={categories}
             onEdit={onEdit}
+            onShowHistory={onShowHistory}
             onDrop={handleDrop}
             onContextMenu={handleContextMenu}
             onAddTask={onAddTask}

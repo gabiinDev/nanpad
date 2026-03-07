@@ -37,15 +37,30 @@ export class HistorySqliteRepository implements IHistoryRepository {
 
   async findByEntity(
     entityType: string,
-    entityId: EntityId
+    entityId: EntityId,
+    options?: { limit?: number; offset?: number }
   ): Promise<HistoryEntry[]> {
+    const limit = options?.limit;
+    const offset = options?.offset ?? 0;
+    const limitClause = limit != null ? ` LIMIT ${Math.max(0, limit)}` : "";
+    const offsetClause = offset > 0 ? ` OFFSET ${offset}` : "";
     const rows = await this.db.select<HistoryEntryRow[]>(
       `SELECT * FROM history_entries
        WHERE entity_type = $1 AND entity_id = $2
-       ORDER BY created_at ASC`,
+       ORDER BY created_at DESC${limitClause}${offsetClause}`,
       [entityType, entityId]
     );
     return rows.map(rowToHistoryEntry);
+  }
+
+  async countByEntity(entityType: string, entityId: EntityId): Promise<number> {
+    const rows = await this.db.select<{ count: number | string }[]>(
+      `SELECT COUNT(*) as count FROM history_entries
+       WHERE entity_type = $1 AND entity_id = $2`,
+      [entityType, entityId]
+    );
+    const n = rows[0]?.count;
+    return n != null ? Number(n) : 0;
   }
 
   async findByEntityType(entityType: string): Promise<HistoryEntry[]> {

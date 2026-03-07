@@ -15,7 +15,12 @@ export type HistoryAction =
   | "restore"
   | "status_change"
   | "assign"
-  | "unassign";
+  | "unassign"
+  | "subtask_added"
+  | "subtask_removed"
+  | "subtask_completed"
+  | "attachment_added"
+  | "attachment_removed";
 
 /** Props para reconstruir una HistoryEntry desde persistencia. */
 export interface HistoryEntryProps {

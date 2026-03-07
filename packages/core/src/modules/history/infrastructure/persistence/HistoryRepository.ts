@@ -18,12 +18,22 @@ export interface IHistoryRepository {
   save(entry: HistoryEntry): Promise<void>;
 
   /**
-   * Devuelve todos los registros de una entidad ordenados por fecha ascendente.
+   * Devuelve los registros de una entidad ordenados por fecha ascendente.
    * @param entityType - Tipo de entidad ("task", "category", "document", etc.).
    * @param entityId - ID de la entidad.
+   * @param options - Opcional: limit y offset para paginación.
    * @returns Array de registros ordenados cronológicamente.
    */
-  findByEntity(entityType: string, entityId: EntityId): Promise<HistoryEntry[]>;
+  findByEntity(
+    entityType: string,
+    entityId: EntityId,
+    options?: { limit?: number; offset?: number }
+  ): Promise<HistoryEntry[]>;
+
+  /**
+   * Cuenta el total de registros de una entidad (para paginación).
+   */
+  countByEntity(entityType: string, entityId: EntityId): Promise<number>;
 
   /**
    * Devuelve todos los registros de un tipo de entidad.

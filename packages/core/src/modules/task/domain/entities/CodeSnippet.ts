@@ -52,12 +52,15 @@ export class CodeSnippet {
 
   /**
    * Crea un nuevo CodeSnippet.
+   * El contenido puede estar vacío cuando se adjunta un archivo completo (solo filePath).
    * @param props - Datos del fragmento de código.
-   * @throws {Error} Si el contenido está vacío.
+   * @throws {Error} Si el contenido está vacío y no se proporciona filePath.
    */
   static create(props: CreateCodeSnippetProps): CodeSnippet {
-    if (!props.content.trim()) {
-      throw new Error("[CodeSnippet] El contenido no puede estar vacío.");
+    const hasContent = props.content != null && props.content.trim().length > 0;
+    const hasFilePath = props.filePath != null && props.filePath.trim().length > 0;
+    if (!hasContent && !hasFilePath) {
+      throw new Error("[CodeSnippet] Se requiere contenido o filePath.");
     }
     return new CodeSnippet({
       id: generateId(),

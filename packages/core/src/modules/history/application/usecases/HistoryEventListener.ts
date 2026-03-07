@@ -14,6 +14,11 @@ import type {
   TaskStatusChangedPayload,
   TaskCompletedPayload,
   TaskRestoredPayload,
+  TaskSubtaskAddedPayload,
+  TaskSubtaskRemovedPayload,
+  TaskSubtaskCompletedPayload,
+  TaskAttachmentAddedPayload,
+  TaskAttachmentRemovedPayload,
   CategoryCreatedPayload,
   CategoryUpdatedPayload,
   CategoryDeletedPayload,
@@ -107,6 +112,72 @@ export class HistoryEventListener {
             entityType: "task",
             entityId: e.payload.taskId,
             action: "restore",
+          });
+        }
+      ),
+
+      this.eventBus.on<TaskSubtaskAddedPayload>(
+        "task.subtask.added",
+        (e: AppEvent<TaskSubtaskAddedPayload>) => {
+          this.record({
+            entityType: "task",
+            entityId: e.payload.taskId,
+            action: "subtask_added",
+            fieldName: "subtask",
+            newValue: e.payload.title,
+          });
+        }
+      ),
+
+      this.eventBus.on<TaskSubtaskRemovedPayload>(
+        "task.subtask.removed",
+        (e: AppEvent<TaskSubtaskRemovedPayload>) => {
+          this.record({
+            entityType: "task",
+            entityId: e.payload.taskId,
+            action: "subtask_removed",
+            fieldName: "subtask",
+            newValue: e.payload.title,
+          });
+        }
+      ),
+
+      this.eventBus.on<TaskSubtaskCompletedPayload>(
+        "task.subtask.completed",
+        (e: AppEvent<TaskSubtaskCompletedPayload>) => {
+          this.record({
+            entityType: "task",
+            entityId: e.payload.taskId,
+            action: "subtask_completed",
+            fieldName: "subtask",
+            oldValue: e.payload.completed ? "pendiente" : "completada",
+            newValue: e.payload.completed ? "completada" : "pendiente",
+          });
+        }
+      ),
+
+      this.eventBus.on<TaskAttachmentAddedPayload>(
+        "task.attachment.added",
+        (e: AppEvent<TaskAttachmentAddedPayload>) => {
+          this.record({
+            entityType: "task",
+            entityId: e.payload.taskId,
+            action: "attachment_added",
+            fieldName: "adjunto",
+            newValue: e.payload.filePath ?? "Adjunto",
+          });
+        }
+      ),
+
+      this.eventBus.on<TaskAttachmentRemovedPayload>(
+        "task.attachment.removed",
+        (e: AppEvent<TaskAttachmentRemovedPayload>) => {
+          this.record({
+            entityType: "task",
+            entityId: e.payload.taskId,
+            action: "attachment_removed",
+            fieldName: "adjunto",
+            newValue: e.payload.filePath ?? "Adjunto",
           });
         }
       ),

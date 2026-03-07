@@ -4,14 +4,20 @@
 
 import { Subtask } from "../../domain/entities/Subtask";
 import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { IEventBus } from "@shared/event-bus/types";
+import { createEvent } from "@shared/event-bus/EventBus";
 import type { AddSubtaskInput, SubtaskDTO } from "../dtos/TaskDTO";
 import { subtaskToDTO } from "../dtos/mappers";
 
 /**
  * Añade una nueva subtarea a una tarea existente.
+ * Emite "task.subtask.added" para registro en historial.
  */
 export class AddSubtask {
-  constructor(private readonly taskRepository: ITaskRepository) {}
+  constructor(
+    private readonly taskRepository: ITaskRepository,
+    private readonly eventBus: IEventBus
+  ) {}
 
   /**
    * @param input - ID de la tarea padre y título de la subtarea.
@@ -31,6 +37,15 @@ export class AddSubtask {
     });
 
     await this.taskRepository.saveSubtask(subtask);
+
+    this.eventBus.emitAsync(
+      createEvent("task.subtask.added", {
+        taskId: input.taskId,
+        subtaskId: subtask.id,
+        title: subtask.title,
+      })
+    );
+
     return subtaskToDTO(subtask);
   }
 }

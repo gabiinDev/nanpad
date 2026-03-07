@@ -84,6 +84,37 @@ export interface TaskRestoredPayload extends EventPayload {
   taskId: string;
 }
 
+export interface TaskSubtaskAddedPayload extends EventPayload {
+  taskId: string;
+  subtaskId: string;
+  title: string;
+}
+
+export interface TaskSubtaskRemovedPayload extends EventPayload {
+  taskId: string;
+  subtaskId: string;
+  title: string;
+}
+
+export interface TaskSubtaskCompletedPayload extends EventPayload {
+  taskId: string;
+  subtaskId: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface TaskAttachmentAddedPayload extends EventPayload {
+  taskId: string;
+  snippetId: string;
+  filePath: string | null;
+}
+
+export interface TaskAttachmentRemovedPayload extends EventPayload {
+  taskId: string;
+  snippetId: string;
+  filePath: string | null;
+}
+
 /** Eventos del módulo Category */
 export interface CategoryCreatedPayload extends EventPayload {
   categoryId: string;

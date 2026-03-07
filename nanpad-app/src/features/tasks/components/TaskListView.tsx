@@ -337,18 +337,30 @@ export function TaskListView({ tasks, categories, onEdit, onComplete, onRestore,
                   )}
                 </div>
 
-                {/* Metadata + icono editar */}
-                <div className="mr-4 flex shrink-0 items-center gap-3">
+                {/* Metadata + iconos editar e historial */}
+                <div className="mr-4 flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onEdit(task); }}
                     title="Editar tarea"
                     aria-label="Editar tarea"
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded transition-colors hover:bg-[var(--color-surface-active)]"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded transition-[color,transform,background-color] duration-150 hover:scale-110 hover:bg-[var(--color-surface-active)] active:scale-95"
                     style={{ color: "var(--color-text-muted)" }}
                   >
                     <IconEdit size={14} />
                   </button>
+                  {onShowHistory && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onShowHistory(task); }}
+                      title="Ver historial"
+                      aria-label="Ver historial"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded transition-[color,transform,background-color] duration-150 hover:scale-110 hover:bg-[var(--color-surface-active)] active:scale-95"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      <IconClock size={14} />
+                    </button>
+                  )}
                   <PriorityBadge priority={task.priority} />
                   <StatusBadge status={task.status} />
                   {task.subtasks.length > 0 && (

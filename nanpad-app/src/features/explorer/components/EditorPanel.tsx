@@ -22,6 +22,7 @@ import {
   IconCut,
   IconPaste,
   IconTasks,
+  IconFileCode,
 } from "@ui/icons/index.tsx";
 import { AttachToTaskModal, type AttachToTaskPayload } from "./AttachToTaskModal.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
@@ -178,9 +179,11 @@ interface ToolbarProps {
   onCutAll: () => void;
   onPaste: () => void;
   onAttachToTask?: () => void;
+  /** Adjuntar archivo completo a una tarea (solo si el tab tiene path). */
+  onAttachFileToTask?: () => void;
 }
 
-function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask, isMarkdown: isMarkdownProp }: ToolbarProps) {
+function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask, onAttachFileToTask, isMarkdown: isMarkdownProp }: ToolbarProps) {
   const isMarkdown = isMarkdownProp ?? (tab.ext === "md" || tab.ext === "mdx");
 
   return (
@@ -242,6 +245,16 @@ function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCop
                   className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
                 >
                   <IconTasks size={12} />
+                </button>
+              )}
+              {onAttachFileToTask && (
+                <button
+                  type="button"
+                  title="Añadir archivo completo a tarea"
+                  onClick={onAttachFileToTask}
+                  className="flex h-7 w-7 items-center justify-center rounded text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-accent)]"
+                >
+                  <IconFileCode size={12} />
                 </button>
               )}
             </div>
@@ -386,6 +399,18 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
       lineEnd: range.endLineNumber,
     });
   }, [tab.id, tab.ext, tab.path]);
+
+  /** Adjuntar el archivo completo (sin rango de líneas). Solo para tabs con path. */
+  const handleAttachFileToTask = useCallback(() => {
+    if (!tab.path) return;
+    setAttachModalPayload({
+      content: "",
+      language: tab.ext ?? null,
+      filePath: tab.path,
+      lineStart: null,
+      lineEnd: null,
+    });
+  }, [tab.path, tab.ext]);
 
   // Aplicar configuración sin diagnósticos
   useMonacoNoDiagnostics();
@@ -658,6 +683,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
         onCutAll={handleCutAll}
         onPaste={handlePaste}
         onAttachToTask={handleAttachToTask}
+        onAttachFileToTask={tab.path ? handleAttachFileToTask : undefined}
         isMarkdown={isMarkdown}
       />
 

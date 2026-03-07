@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useApp } from "@app/AppContext.tsx";
 import type { TaskDTO } from "@nanpad/core";
 import { IconClose } from "@ui/icons/index.tsx";
+import { StatusBadge } from "@ui/components/Badge.tsx";
 
 export interface AttachToTaskPayload {
   content: string;
@@ -125,7 +126,9 @@ export function AttachToTaskModal({ payload, onClose, onAttached }: AttachToTask
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--color-surface-active)] disabled:opacity-50"
                   >
                     <span className="min-w-0 flex-1 truncate font-medium text-[var(--color-text-primary)]">{task.title}</span>
-                    <span className="shrink-0 text-[10px] text-[var(--color-text-muted)]">{task.status}</span>
+                    <span className="shrink-0">
+                      <StatusBadge status={task.status} />
+                    </span>
                   </button>
                 </li>
               ))}

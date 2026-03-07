@@ -205,7 +205,7 @@ describe("AddSubtask", () => {
     repo = new InMemoryTaskRepository();
     bus = new EventBus();
     create = new CreateTask(repo, bus);
-    addSubtask = new AddSubtask(repo);
+    addSubtask = new AddSubtask(repo, bus);
   });
 
   it("añade una subtarea a una tarea existente", async () => {
@@ -237,7 +237,7 @@ describe("AttachCodeToTask", () => {
     repo = new InMemoryTaskRepository();
     bus = new EventBus();
     create = new CreateTask(repo, bus);
-    attach = new AttachCodeToTask(repo);
+    attach = new AttachCodeToTask(repo, bus);
   });
 
   it("adjunta un fragmento de código con metadatos", async () => {

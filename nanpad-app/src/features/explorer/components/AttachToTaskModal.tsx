@@ -55,6 +55,7 @@ export function AttachToTaskModal({ payload, onClose, onAttached }: AttachToTask
           lineEnd: payload.lineEnd ?? null,
         });
         onAttached?.();
+        window.dispatchEvent(new CustomEvent("nanpad:code-attached", { detail: { taskId } }));
         onClose();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Error al adjuntar");
@@ -75,13 +76,13 @@ export function AttachToTaskModal({ payload, onClose, onAttached }: AttachToTask
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 backdrop-blur-sm py-8 px-4 sm:py-10 sm:px-6"
       onClick={onClose}
       role="dialog"
       aria-label="Añadir a tarea"
     >
       <div
-        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
+        className="flex max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-5rem)] w-full max-w-md flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 py-3">

@@ -15,6 +15,7 @@ import {
   type DirEntry,
 } from "@tauri-apps/plugin-fs";
 import { open as dialogOpen, save as dialogSave } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { homeDir, join, appLocalDataDir } from "@tauri-apps/api/path";
 
 /** Nodo del árbol de archivos. */
@@ -268,6 +269,18 @@ export async function createNewTempFile(): Promise<string> {
 }
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
+
+/**
+ * Comprueba si existe un archivo en la ruta absoluta dada.
+ * Usa un comando Tauri para evitar restricciones de scope del plugin fs.
+ */
+export async function fileExists(path: string): Promise<boolean> {
+  try {
+    return await invoke<boolean>("check_file_exists", { path });
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Extrae la extensión de un nombre de archivo (sin punto, en minúsculas).

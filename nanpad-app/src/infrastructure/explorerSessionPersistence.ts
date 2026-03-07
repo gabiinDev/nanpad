@@ -10,12 +10,18 @@
 import type { IDatabase } from "@nanpad/core";
 import type { ClosedTabInfo } from "@/store/useExplorerStore.ts";
 
-/** Sesión persistida: paths de tabs reales, tab activo, modos .md y pila de cerrados. */
+/** Sesión persistida: paths de tabs reales, tab activo, modos .md, pila cerrados, favoritos, panel favoritos y lenguajes. */
 export interface PersistedExplorerSession {
   realTabIds: string[];
   activeTabId: string | null;
   mdViewModes?: Record<string, { mode: string; splitRatio: number }>;
   closedTabsStack?: ClosedTabInfo[];
+  /** Rutas absolutas de carpetas favoritas para acceso rápido. */
+  favoriteFolders?: string[];
+  /** Si el panel de favoritos está expandido (true) o colapsado (false). */
+  favoritesPanelExpanded?: boolean;
+  /** Override de lenguaje por tabId (notas temporales y archivos). */
+  tempLanguageOverrides?: Record<string, string>;
 }
 
 const ROW_ID = 1;
@@ -34,9 +40,12 @@ export async function loadExplorerSessionFromDb(
       active_tab_id: string | null;
       md_view_modes?: string | null;
       closed_tabs_stack?: string | null;
+      favorite_folders?: string | null;
+      favorites_panel_expanded?: number | null;
+      temp_language_overrides?: string | null;
     }[]
   >(
-    "SELECT real_tab_ids, active_tab_id, md_view_modes, closed_tabs_stack FROM explorer_session WHERE id = ?",
+    "SELECT real_tab_ids, active_tab_id, md_view_modes, closed_tabs_stack, favorite_folders, favorites_panel_expanded, temp_language_overrides FROM explorer_session WHERE id = ?",
     [ROW_ID]
   );
   const row = rows[0];
@@ -79,7 +88,37 @@ export async function loadExplorerSessionFromDb(
         // ignorar
       }
     }
-    return { realTabIds: ids, activeTabId, mdViewModes, closedTabsStack };
+    let favoriteFolders: string[] | undefined;
+    if (row.favorite_folders != null && row.favorite_folders !== "") {
+      try {
+        const parsed = JSON.parse(row.favorite_folders) as unknown;
+        if (Array.isArray(parsed)) {
+          favoriteFolders = parsed.filter((x): x is string => typeof x === "string");
+        }
+      } catch {
+        // ignorar
+      }
+    }
+    const favoritesPanelExpanded =
+      row.favorites_panel_expanded != null
+        ? row.favorites_panel_expanded !== 0
+        : undefined;
+    let tempLanguageOverrides: Record<string, string> | undefined;
+    if (row.temp_language_overrides != null && row.temp_language_overrides !== "") {
+      try {
+        const parsed = JSON.parse(row.temp_language_overrides) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const obj = parsed as Record<string, unknown>;
+          tempLanguageOverrides = {};
+          for (const [k, v] of Object.entries(obj)) {
+            if (typeof k === "string" && typeof v === "string") tempLanguageOverrides[k] = v;
+          }
+        }
+      } catch {
+        // ignorar
+      }
+    }
+    return { realTabIds: ids, activeTabId, mdViewModes, closedTabsStack, favoriteFolders, favoritesPanelExpanded, tempLanguageOverrides };
   } catch {
     return null;
   }
@@ -98,15 +137,21 @@ export async function saveExplorerSessionToDb(
   const activeTabId = session.activeTabId ?? null;
   const mdViewModesJson = JSON.stringify(session.mdViewModes ?? {});
   const closedTabsStackJson = JSON.stringify(session.closedTabsStack ?? []);
+  const favoriteFoldersJson = JSON.stringify(session.favoriteFolders ?? []);
+  const favoritesPanelExpanded = session.favoritesPanelExpanded !== false ? 1 : 0;
+  const tempLanguageOverridesJson = JSON.stringify(session.tempLanguageOverrides ?? {});
   await db.execute(
-    `INSERT INTO explorer_session (id, real_tab_ids, active_tab_id, md_view_modes, closed_tabs_stack, updated_at)
-     VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `INSERT INTO explorer_session (id, real_tab_ids, active_tab_id, md_view_modes, closed_tabs_stack, favorite_folders, favorites_panel_expanded, temp_language_overrides, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(id) DO UPDATE SET
        real_tab_ids = excluded.real_tab_ids,
        active_tab_id = excluded.active_tab_id,
        md_view_modes = excluded.md_view_modes,
        closed_tabs_stack = excluded.closed_tabs_stack,
+       favorite_folders = excluded.favorite_folders,
+       favorites_panel_expanded = excluded.favorites_panel_expanded,
+       temp_language_overrides = excluded.temp_language_overrides,
        updated_at = excluded.updated_at`,
-    [ROW_ID, realTabIdsJson, activeTabId, mdViewModesJson, closedTabsStackJson]
+    [ROW_ID, realTabIdsJson, activeTabId, mdViewModesJson, closedTabsStackJson, favoriteFoldersJson, favoritesPanelExpanded, tempLanguageOverridesJson]
   );
 }

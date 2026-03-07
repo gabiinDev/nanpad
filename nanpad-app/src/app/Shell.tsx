@@ -33,6 +33,7 @@ import { loadAllTempFiles } from "@/infrastructure/FsService.ts";
 import { homeDir } from "@tauri-apps/api/path";
 import { IconPlus } from "@ui/icons/index.tsx";
 import { HelpFloating } from "@features/help/HelpFloating.tsx";
+import { ToastContainer } from "@ui/components/Toast.tsx";
 
 interface NavItem {
   route: AppRoute;
@@ -333,6 +334,7 @@ export default function Shell() {
         </div>
       </main>
       {showHelpIcon && <HelpFloating visible={showHelpIcon} />}
+      <ToastContainer />
       <CommandPalette />
     </div>
   );

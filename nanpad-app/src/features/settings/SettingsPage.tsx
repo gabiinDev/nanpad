@@ -5,10 +5,12 @@
 
 import { useState, useRef } from "react";
 import { IconMoon, IconSun, IconZap, IconHelp } from "@ui/icons/index.tsx";
+import { CategoriesSection } from "@features/tasks/components/CategoriesSection.tsx";
 import type { ThemeState } from "@app/useTheme.ts";
 import { useApp } from "@app/AppContext.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
 import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
+import { useCategoryStore } from "@/store/useCategoryStore.ts";
 
 interface SettingsPageProps {
   theme: ThemeState;
@@ -17,6 +19,7 @@ interface SettingsPageProps {
 export default function SettingsPage({ theme }: SettingsPageProps) {
   const uc = useApp();
   const showHelpIcon = useAppSettingsStore((s) => s.show_help_icon);
+  const { categories, loadCategories } = useCategoryStore();
   const defaultTaskView = useAppSettingsStore((s) => s.default_task_view);
   const setShowHelpIcon = useAppSettingsStore((s) => s.setShowHelpIcon);
   const setDefaultTaskView = useAppSettingsStore((s) => s.setDefaultTaskView);
@@ -195,6 +198,11 @@ export default function SettingsPage({ theme }: SettingsPageProps) {
               }`}
             />
           </button>
+        </div>
+
+        {/* ABM de categorías de tareas */}
+        <div className="mb-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-4 py-4">
+          {uc && <CategoriesSection uc={uc} categories={categories} loadCategories={loadCategories} />}
         </div>
 
         {/* Vista por defecto Tareas */}

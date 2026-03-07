@@ -98,3 +98,57 @@ export function detectLanguage(ext?: string): string {
   if (!ext) return "plaintext";
   return EXT_TO_LANG[ext.toLowerCase()] ?? "plaintext";
 }
+
+/** Mapeo inverso: identificador Monaco → extensión para "Guardar como". */
+const LANG_TO_EXT: Record<string, string> = {
+  plaintext: "txt",
+  markdown: "md",
+  typescript: "ts",
+  typescriptreact: "tsx",
+  javascript: "js",
+  javascriptreact: "jsx",
+  vue: "vue",
+  html: "html",
+  css: "css",
+  scss: "scss",
+  json: "json",
+  yaml: "yml",
+  xml: "xml",
+  python: "py",
+  rust: "rs",
+  go: "go",
+  java: "java",
+  csharp: "cs",
+  cpp: "cpp",
+  c: "c",
+  shell: "sh",
+  powershell: "ps1",
+  bat: "bat",
+  sql: "sql",
+  pgsql: "sql",
+  dockerfile: "dockerfile",
+  ini: "ini",
+  restructuredtext: "rst",
+  hcl: "tf",
+  graphql: "graphql",
+  protobuf: "proto",
+  fsharp: "fs",
+  elixir: "ex",
+  kotlin: "kt",
+  ruby: "rb",
+  php: "php",
+  lua: "lua",
+  r: "r",
+  scala: "scala",
+  clojure: "clj",
+  haskell: "hs",
+};
+
+/**
+ * Retorna la extensión (sin punto) para "Guardar como" según el lenguaje Monaco.
+ * @param langId - Id de Monaco (ej. `"markdown"`, `"typescript"`).
+ * @returns Extensión sin punto; si no se reconoce devuelve `"txt"`.
+ */
+export function languageToExt(langId: string): string {
+  return LANG_TO_EXT[langId] ?? "txt";
+}

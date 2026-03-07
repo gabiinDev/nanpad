@@ -44,6 +44,8 @@ interface TaskStore {
   setFilters: (uc: AppUseCases, filters: TaskFilters) => Promise<void>;
   setView: (view: TaskView) => void;
 
+  /** Reemplaza una tarea en el store (p. ej. tras toggle de subtarea sin refetch). */
+  replaceTask: (task: TaskDTO) => void;
   /** Deshace el último cambio de tarea (Ctrl+Z). */
   undoTaskChange: (uc: AppUseCases) => Promise<boolean>;
   /** Rehace el último cambio deshecho (Ctrl+Y). */
@@ -169,6 +171,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   setView: (view) => { set({ view }); },
+
+  replaceTask: (task) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) => (t.id === task.id ? task : t)),
+      allTasks: state.allTasks.map((t) => (t.id === task.id ? task : t)),
+    }));
+  },
 
   setTaskUndoStacks: (undo, redo) => {
     set({ taskUndoStack: undo, taskRedoStack: redo });

@@ -6,14 +6,17 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import type { TaskDTO } from "@nanpad/core";
+import type { TaskDTO, CategoryDTO } from "@nanpad/core";
 import { useNavFocusStore } from "@/store/useNavFocusStore.ts";
 import { StatusBadge, PriorityBadge } from "@ui/components/Badge.tsx";
+import { CategoryBadge } from "@ui/components/CategoryBadge.tsx";
 import { ContextMenu, type ContextMenuItem } from "@ui/components/ContextMenu.tsx";
-import { IconCheck, IconProgress, IconArchive, IconRestore, IconEdit, IconPlus, IconClock } from "@ui/icons/index.tsx";
+import { SubtaskCheckbox } from "@ui/components/SubtaskCheckbox.tsx";
+import { IconCheck, IconProgress, IconArchive, IconRestore, IconEdit, IconPlus, IconClock, IconChevronDown, IconChevron } from "@ui/icons/index.tsx";
 
 interface TaskListViewProps {
   tasks: TaskDTO[];
+  categories: CategoryDTO[];
   onEdit: (task: TaskDTO) => void;
   onComplete: (id: string) => void;
   onRestore: (id: string) => void;
@@ -22,6 +25,8 @@ interface TaskListViewProps {
   onAddTask?: () => void;
   /** Abrir modal de historial de la tarea. */
   onShowHistory?: (task: TaskDTO) => void;
+  /** Alternar subtarea completada desde la vista (sin abrir modal). */
+  onToggleSubtask?: (task: TaskDTO, subtaskId: string) => void;
 }
 
 interface ContextState { x: number; y: number; task: TaskDTO; }
@@ -43,20 +48,38 @@ const PRIORITY_COLOR: Record<number, string> = {
 /**
  * Lista virtualizada de tareas con estética de editor de código.
  */
-export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatus, onAddTask, onShowHistory }: TaskListViewProps) {
+export function TaskListView({ tasks, categories, onEdit, onComplete, onRestore, onMoveStatus, onAddTask, onShowHistory, onToggleSubtask }: TaskListViewProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
   const [emptyContextMenu, setEmptyContextMenu] = useState<EmptyContextState | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [expandedSubtaskIds, setExpandedSubtaskIds] = useState<Set<string>>(new Set());
   const focusTaskId = useNavFocusStore((s) => s.focusTaskId);
   const setFocusTaskId = useNavFocusStore((s) => s.setFocusTaskId);
 
   const virtualizer = useVirtualizer({
     count: tasks.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 58,
+    getItemKey: (index) => {
+      const t = tasks[index];
+      const id = t?.id ?? String(index);
+      const expanded = t ? expandedSubtaskIds.has(t.id) : false;
+      return `${id}-${expanded}`;
+    },
+    estimateSize: (index) => {
+      const t = tasks[index];
+      if (!t || !expandedSubtaskIds.has(t.id) || t.subtasks.length === 0) return 76;
+      // Altura fila base + bloque subtareas (padding + línea por subtarea) para que el contenedor no se rompa
+      return 76 + 16 + t.subtasks.length * 32;
+    },
     overscan: 10,
   });
+
+  // Recalcular alturas cuando se expande/colapsa subtareas
+  useEffect(() => {
+    const v = virtualizer as { measure?: () => void };
+    v.measure?.();
+  }, [expandedSubtaskIds, virtualizer]);
 
   useEffect(() => {
     if (!focusTaskId) return;
@@ -148,20 +171,24 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
                   width: "100%",
                   transform: `translateY(${vItem.start}px)`,
                   height: `${vItem.size}px`,
+                  minHeight: 0,
+                  overflow: "hidden",
                   borderBottom: "1px solid var(--color-border)",
                   background: isHovered ? "var(--color-surface-hover)" : "transparent",
                   boxShadow: isHovered ? "inset 2px 0 0 var(--color-accent)" : "inset 2px 0 0 transparent",
                   transition: "background 0.12s ease, box-shadow 0.12s ease",
+                  display: "flex",
+                  flexDirection: "row",
                 }}
                 onContextMenu={(e) => { handleContextMenu(e, task); }}
                 onMouseEnter={() => { setHoveredId(task.id); }}
                 onMouseLeave={() => { setHoveredId(null); }}
-                className="flex items-center"
               >
-                {/* Número de línea */}
+                {/* Columna número de línea — ocupa todo el alto de la card */}
                 <div
-                  className="flex h-full w-12 shrink-0 select-none items-center justify-end pr-3"
+                  className="flex w-12 shrink-0 select-none items-center justify-end pr-3"
                   style={{
+                    alignSelf: "stretch",
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: "12px",
                     opacity: isHovered ? 0.7 : 0.3,
@@ -174,6 +201,46 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
                   {lineNum}
                 </div>
 
+                {/* Contenido: fila principal + subtareas (flex column para que se estire hacia abajo) */}
+                <div className="flex min-w-0 flex-1 flex-col">
+                {/* Fila principal de la tarea — click en la fila expande/contrae subtareas si las tiene */}
+                <div
+                  className="flex min-h-[44px] shrink-0 items-center"
+                  role={task.subtasks.length > 0 ? "button" : undefined}
+                  tabIndex={task.subtasks.length > 0 ? 0 : undefined}
+                  aria-label={task.subtasks.length > 0 ? (expandedSubtaskIds.has(task.id) ? "Contraer subtareas" : "Expandir subtareas") : undefined}
+                  onClick={
+                    task.subtasks.length > 0
+                      ? (e) => {
+                          if ((e.target as HTMLElement).closest("button")) return;
+                          setExpandedSubtaskIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(task.id)) next.delete(task.id);
+                            else next.add(task.id);
+                            return next;
+                          });
+                        }
+                      : undefined
+                  }
+                  onKeyDown={
+                    task.subtasks.length > 0
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setExpandedSubtaskIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(task.id)) next.delete(task.id);
+                              else next.add(task.id);
+                              return next;
+                            });
+                          }
+                        }
+                      : undefined
+                  }
+                  style={{
+                    cursor: task.subtasks.length > 0 ? "pointer" : "default",
+                  }}
+                >
                 {/* Indicador de prioridad */}
                 <div className="flex h-full w-6 shrink-0 items-center justify-center">
                   <span
@@ -188,7 +255,8 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
 
                 {/* Checkbox */}
                 <button
-                  onClick={() => isDone ? onRestore(task.id) : onComplete(task.id)}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); (isDone ? onRestore(task.id) : onComplete(task.id)); }}
                   aria-label={isDone ? "Restaurar" : "Completar"}
                   className="mr-3 flex h-4 w-4 shrink-0 items-center justify-center rounded transition-all duration-150"
                   style={{
@@ -206,9 +274,8 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
                   )}
                 </button>
 
-                {/* Título + descripción */}
-                <button
-                  onClick={() => onEdit(task)}
+                {/* Título + descripción (sin click; editar con el icono) */}
+                <div
                   className="flex flex-1 flex-col items-start overflow-hidden text-left"
                   style={{ gap: "1px" }}
                 >
@@ -244,20 +311,114 @@ export function TaskListView({ tasks, onEdit, onComplete, onRestore, onMoveStatu
                       {task.description}
                     </span>
                   )}
-                </button>
+                  {task.categoryIds.length > 0 && (
+                    <div
+                      className="flex shrink-0 flex-wrap gap-1 overflow-hidden"
+                      style={{ marginTop: "4px", maxHeight: "24px" }}
+                    >
+                      {task.categoryIds.slice(0, 4).map((catId) => {
+                        const cat = categories.find((c) => c.id === catId);
+                        return cat ? <CategoryBadge key={cat.id} category={cat} compact /> : null;
+                      })}
+                      {task.categoryIds.length > 4 && (
+                        <span
+                          className="shrink-0 text-xs"
+                          style={{ color: "var(--color-text-muted)", alignSelf: "flex-end" }}
+                          title={task.categoryIds
+                            .slice(4)
+                            .map((catId) => categories.find((c) => c.id === catId)?.name ?? catId)
+                            .filter(Boolean)
+                            .join(", ")}
+                        >
+                          +{task.categoryIds.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-                {/* Metadata */}
+                {/* Metadata + icono editar */}
                 <div className="mr-4 flex shrink-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+                    title="Editar tarea"
+                    aria-label="Editar tarea"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded transition-colors hover:bg-[var(--color-surface-active)]"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    <IconEdit size={14} />
+                  </button>
                   <PriorityBadge priority={task.priority} />
                   <StatusBadge status={task.status} />
                   {task.subtasks.length > 0 && (
-                    <span
-                      className="font-mono text-xs"
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedSubtaskIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(task.id)) next.delete(task.id);
+                          else next.add(task.id);
+                          return next;
+                        });
+                      }}
+                      className="flex items-center gap-1 font-mono text-xs transition-colors hover:text-[var(--color-text-secondary)]"
                       style={{ color: "var(--color-text-muted)" }}
                     >
-                      {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-                    </span>
+                      {expandedSubtaskIds.has(task.id) ? (
+                        <IconChevronDown size={10} />
+                      ) : (
+                        <IconChevron size={10} />
+                      )}
+                      Subtareas {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
+                    </button>
                   )}
+                </div>
+                </div>
+
+                {/* Subtareas expandibles — la card se estira hacia abajo */}
+                {task.subtasks.length > 0 && expandedSubtaskIds.has(task.id) && (
+                  <div
+                    className="flex shrink-0 flex-col gap-2 border-l-2 border-[var(--color-accent-subtle)] py-2 pl-4 pr-4"
+                    style={{ borderColor: "var(--color-accent-subtle)", marginLeft: "0.5rem", minHeight: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {task.subtasks.map((s) => {
+                      const checkboxId = `subtask-${task.id}-${s.id}`;
+                      return (
+                        <div
+                          key={s.id}
+                          className="flex min-h-[28px] items-start gap-2 text-xs"
+                        >
+                          {onToggleSubtask ? (
+                            <SubtaskCheckbox
+                              id={checkboxId}
+                              checked={s.completed}
+                              onChange={() => onToggleSubtask(task, s.id)}
+                              aria-label={`Marcar "${s.title}" como completada`}
+                            />
+                          ) : null}
+                          <label
+                            htmlFor={onToggleSubtask ? checkboxId : undefined}
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              overflowWrap: "break-word",
+                              wordBreak: "break-word",
+                              color: "var(--color-text-secondary)",
+                              textDecoration: s.completed ? "line-through" : "none",
+                              opacity: s.completed ? 0.7 : 1,
+                              cursor: onToggleSubtask ? "pointer" : "default",
+                            }}
+                          >
+                            {s.title}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 </div>
               </div>
             );

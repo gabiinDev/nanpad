@@ -1,9 +1,12 @@
 /**
  * Menú contextual flotante — Technical Noir.
  * Estética de terminal/IDE con fuente monoespaciada.
+ * Se renderiza en document.body vía portal para evitar que ancestros con
+ * transform (p. ej. animate-fade-up) alteren la posición de position:fixed.
  */
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export interface ContextMenuItem {
   label: string;
@@ -43,7 +46,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     };
   }, [onClose]);
 
-  return (
+  const menu = (
     <div
       ref={menuRef}
       role="menu"
@@ -115,4 +118,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       </div>
     </div>
   );
+
+  return document.body ? createPortal(menu, document.body) : menu;
 }

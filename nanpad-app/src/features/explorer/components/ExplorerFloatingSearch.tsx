@@ -7,7 +7,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useExplorerStore, type OpenTab } from "@/store/useExplorerStore.ts";
 import { useExplorerFloatingSearchStore } from "@/store/useExplorerFloatingSearchStore.ts";
-import { IconClose, IconSearch, IconSplitMode } from "@ui/icons/index.tsx";
+import { IconClose, IconExpand, IconCompress, IconSearch, IconSplitMode } from "@ui/icons/index.tsx";
 
 type Mode = "search" | "compare";
 
@@ -66,7 +66,28 @@ export function ExplorerFloatingSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [compareTabA, setCompareTabA] = useState<string>("");
   const [compareTabB, setCompareTabB] = useState<string>("");
+  const [fullscreen, setFullscreen] = useState(false);
+  const [splitRatio, setSplitRatio] = useState(0.5);
   const inputRef = useRef<HTMLInputElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const resizingRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (fullscreen) setFullscreen(false);
+        else setOpen(false);
+      }
+      if (e.key === "F11") {
+        e.preventDefault();
+        setFullscreen((f) => !f);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, setOpen, fullscreen]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,6 +118,43 @@ export function ExplorerFloatingSearch() {
     [setActiveTab, setOpen]
   );
 
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    resizingRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!resizingRef.current) return;
+      const container = document.querySelector("[data-compare-container]");
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const r = Math.max(0.2, Math.min(0.8, x));
+      setSplitRatio(r);
+    };
+    const onUp = () => {
+      resizingRef.current = false;
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const handleLeftScroll = useCallback(() => {
+    const l = leftPanelRef.current;
+    const r = rightPanelRef.current;
+    if (l && r) r.scrollTop = l.scrollTop;
+  }, []);
+  const handleRightScroll = useCallback(() => {
+    const l = leftPanelRef.current;
+    const r = rightPanelRef.current;
+    if (l && r) l.scrollTop = r.scrollTop;
+  }, []);
+
   if (!open) return null;
 
   return (
@@ -107,8 +165,10 @@ export function ExplorerFloatingSearch() {
       aria-label="Buscar en tabs / Comparar archivos"
     >
       <div
-        className="flex w-full max-w-4xl flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
-        style={{ maxHeight: "80vh" }}
+        className={`flex flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)] transition-all duration-200 ${
+          fullscreen ? "fixed inset-4 max-w-none" : "w-full max-w-4xl"
+        }`}
+        style={{ maxHeight: fullscreen ? "calc(100vh - 2rem)" : "80vh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: modo + cerrar */}
@@ -139,14 +199,26 @@ export function ExplorerFloatingSearch() {
               Comparar archivos
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Cerrar"
-            className="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-text-primary)]"
-          >
-            <IconClose size={14} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setFullscreen((f) => !f)}
+              aria-label={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+              title={fullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+              className="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-text-primary)]"
+            >
+              {fullscreen ? <IconCompress size={14} /> : <IconExpand size={14} />}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Cerrar"
+              title="Cerrar (Esc)"
+              className="rounded p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-text-primary)]"
+            >
+              <IconClose size={14} />
+            </button>
+          </div>
         </div>
 
         {mode === "search" && (
@@ -201,7 +273,10 @@ export function ExplorerFloatingSearch() {
                 <select
                   value={compareTabA}
                   onChange={(e) => setCompareTabA(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 pr-8 text-sm text-[var(--color-text-primary)] appearance-none bg-[length:12px] bg-[right_0.75rem_center] bg-no-repeat"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M3 4.5 L6 7.5 L9 4.5'/%3E%3C/svg%3E")`,
+                  }}
                 >
                   {openTabs.map((t) => (
                     <option key={t.id} value={t.id}>{t.label}</option>
@@ -213,7 +288,10 @@ export function ExplorerFloatingSearch() {
                 <select
                   value={compareTabB}
                   onChange={(e) => setCompareTabB(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 pr-8 text-sm text-[var(--color-text-primary)] appearance-none bg-[length:12px] bg-[right_0.75rem_center] bg-no-repeat"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M3 4.5 L6 7.5 L9 4.5'/%3E%3C/svg%3E")`,
+                  }}
                 >
                   {openTabs.map((t) => (
                     <option key={t.id} value={t.id}>{t.label}</option>
@@ -221,28 +299,64 @@ export function ExplorerFloatingSearch() {
                 </select>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
-              <table className="w-full border-collapse text-left font-mono text-xs">
-                <thead className="sticky top-0 z-10 bg-[var(--color-surface-2)]">
-                  <tr>
-                    <th className="w-10 border-b border-r border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">#</th>
-                    <th className="border-b border-r border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">A</th>
-                    <th className="border-b border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">B</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {diffLines.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={row.same ? "" : "bg-[var(--color-priority-high)]/10"}
-                    >
-                      <td className="border-r border-[var(--color-border)] px-2 py-0.5 text-right text-[var(--color-text-muted)]">{i + 1}</td>
-                      <td className="max-w-[50%] border-r border-[var(--color-border)] whitespace-pre break-all px-2 py-0.5 text-[var(--color-text-primary)]">{row.lineA || " "}</td>
-                      <td className="max-w-[50%] whitespace-pre break-all px-2 py-0.5 text-[var(--color-text-primary)]">{row.lineB || " "}</td>
+            <div className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]" data-compare-container>
+              <div
+                ref={leftPanelRef}
+                onScroll={handleLeftScroll}
+                className="min-w-0 overflow-auto border-r border-[var(--color-border)]"
+                style={{ flex: splitRatio }}
+              >
+                <table className="w-full border-collapse text-left font-mono text-xs">
+                  <thead className="sticky top-0 z-10 bg-[var(--color-surface-2)]">
+                    <tr>
+                      <th className="w-10 border-b border-r border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">#</th>
+                      <th className="border-b border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">A</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {diffLines.map((row, i) => (
+                      <tr key={i} className={row.same ? "" : "bg-[var(--color-priority-high)]/10"}>
+                        <td className="border-r border-[var(--color-border)] px-2 py-0.5 text-right text-[var(--color-text-muted)]">{i + 1}</td>
+                        <td className="whitespace-pre break-all px-2 py-0.5 text-[var(--color-text-primary)]">{row.lineA || " "}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div
+                role="separator"
+                onMouseDown={handleResizeStart}
+                className="w-1.5 shrink-0 cursor-col-resize bg-[var(--color-border)] hover:bg-[var(--color-accent)] transition-colors"
+                aria-label="Redimensionar columnas"
+              />
+              <div
+                ref={rightPanelRef}
+                onScroll={handleRightScroll}
+                className="min-w-0 overflow-auto"
+                style={{ flex: 1 - splitRatio }}
+              >
+                <table className="w-full border-collapse text-left font-mono text-xs">
+                  <thead className="sticky top-0 z-10 bg-[var(--color-surface-2)]">
+                    <tr>
+                      <th className="w-10 border-b border-r border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">#</th>
+                      <th className="border-b border-[var(--color-border)] px-2 py-1.5 text-[var(--color-text-muted)]">B</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {diffLines.map((row, i) => (
+                      <tr key={i} className={row.same ? "" : "bg-[var(--color-priority-critical)]/15"}>
+                        <td className="border-r border-[var(--color-border)] px-2 py-0.5 text-right text-[var(--color-text-muted)]">{i + 1}</td>
+                        <td
+                          className="whitespace-pre break-all px-2 py-0.5"
+                          style={{ color: row.same ? "var(--color-text-primary)" : "var(--color-priority-critical)" }}
+                        >
+                          {row.lineB || " "}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

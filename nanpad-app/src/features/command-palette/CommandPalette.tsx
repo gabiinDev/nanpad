@@ -12,6 +12,7 @@ import { useExplorerStore } from "@/store/useExplorerStore.ts";
 import { useNavFocusStore } from "@/store/useNavFocusStore.ts";
 import type { TaskDTO } from "@nanpad/core";
 import { IconClose, IconHome, IconTasks, IconDocument, IconSettings, IconPlus, IconSearch } from "@ui/icons/index.tsx";
+import { getStatusLabel } from "@ui/components/Badge.tsx";
 
 type CommandItemType = "navigate" | "action" | "task" | "document";
 
@@ -95,7 +96,7 @@ export function CommandPalette() {
       id: `task-${t.id}`,
       type: "task",
       label: t.title,
-      subtitle: t.status,
+      subtitle: getStatusLabel(t.status),
       keywords: [t.description ?? ""].filter(Boolean),
       run: () => {
         setRoute("tasks");

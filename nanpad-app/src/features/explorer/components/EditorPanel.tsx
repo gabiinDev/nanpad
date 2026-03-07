@@ -172,14 +172,16 @@ interface ToolbarProps {
   onSave: () => void;
   language: string;
   onLanguageChange: (lang: string) => void;
+  /** Si true, muestra los botones editor/split/preview (p. ej. temp con markdown seleccionado). */
+  isMarkdown?: boolean;
   onCopyAll: () => void;
   onCutAll: () => void;
   onPaste: () => void;
   onAttachToTask?: () => void;
 }
 
-function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask }: ToolbarProps) {
-  const isMarkdown = tab.ext === "md" || tab.ext === "mdx";
+function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask, isMarkdown: isMarkdownProp }: ToolbarProps) {
+  const isMarkdown = isMarkdownProp ?? (tab.ext === "md" || tab.ext === "mdx");
 
   return (
     <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
@@ -198,7 +200,7 @@ function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCop
         {tab.isDirty && !tab.isTemp && (
           <span className="shrink-0 text-[0.6875rem] text-[var(--color-text-muted)]">(sin guardar)</span>
         )}
-        {mode === "editor" && (
+        {(mode === "editor" || mode === "split") && (
           <>
             <div className="h-4 w-px shrink-0 bg-[var(--color-border)]" />
             <LanguageDropdown
@@ -322,7 +324,11 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   const monaco = useMonaco();
   /** Evita registrar el contenido en undo cuando el cambio viene de undo/redo. */
   const isUndoRedoRef = useRef(false);
-  const isMarkdown = tab.ext === "md" || tab.ext === "mdx";
+  const languageOverrides = useExplorerStore((s) => s.languageOverrides);
+  const setLanguageOverride = useExplorerStore((s) => s.setLanguageOverride);
+  const detectedLanguage = detectLanguage(tab.ext);
+  const language = languageOverrides[tab.id] ?? detectedLanguage;
+  const isMarkdown = tab.ext === "md" || tab.ext === "mdx" || language === "markdown";
   const isMdReal = isMarkdown && !!tab.path;
 
   // Tabs .md reales: modo y ratio desde el store (persistidos). Temporales: estado local.
@@ -353,17 +359,15 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   );
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  /** Override de lenguaje por tab (solo modo editor). */
-  const [languageOverrides, setLanguageOverrides] = useState<Record<string, string>>({});
   /** Payload para el modal "Añadir a tarea" (selección actual). */
   const [attachModalPayload, setAttachModalPayload] = useState<AttachToTaskPayload | null>(null);
 
-  const detectedLanguage = detectLanguage(tab.ext);
-  const language = languageOverrides[tab.id] ?? detectedLanguage;
-
   const handleLanguageChange = useCallback((lang: string) => {
-    setLanguageOverrides((prev) => ({ ...prev, [tab.id]: lang }));
-  }, [tab.id]);
+    setLanguageOverride(tab.id, lang);
+    if (lang === "markdown" && tab.isTemp && !tab.path) {
+      setLocalMode("split");
+    }
+  }, [tab.id, tab.isTemp, tab.path, setLanguageOverride]);
 
   const handleAttachToTask = useCallback(() => {
     const ed = editorRef.current;
@@ -386,14 +390,15 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   // Aplicar configuración sin diagnósticos
   useMonacoNoDiagnostics();
 
-  // Al cambiar de tab (solo no-reales): resetear modo local y enfocar editor si aplica
+  // Al cambiar de tab (solo no-reales): resetear modo local y enfocar editor si aplica.
+  // Solo resetea cuando cambia tab.id; no cuando isMarkdown cambia por selección de lenguaje.
   useEffect(() => {
     if (!isMdReal && isMarkdown) setLocalMode("preview");
     if (mode !== "preview") {
       const t = setTimeout(() => editorRef.current?.focus(), 80);
       return () => clearTimeout(t);
     }
-  }, [tab.id, isMarkdown, isMdReal]);
+  }, [tab.id, isMdReal]);
 
   // Foco automático al cambiar a un modo que muestra el editor
   useEffect(() => {
@@ -412,6 +417,18 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     window.addEventListener("nanpad:set-editor-mode", handler as EventListener);
     return () => window.removeEventListener("nanpad:set-editor-mode", handler as EventListener);
   }, [tab.id]);
+
+  // Escuchar evento para posicionar en línea (desde adjuntos de tareas)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { path, lineStart } = (e as CustomEvent<{ path: string; lineStart: number; lineEnd?: number }>).detail;
+      if (tab.path !== path) return;
+      const ed = editorRef.current;
+      if (ed) ed.revealLineInCenter(lineStart);
+    };
+    window.addEventListener("nanpad:open-file-at-line", handler as EventListener);
+    return () => window.removeEventListener("nanpad:open-file-at-line", handler as EventListener);
+  }, [tab.path]);
 
   // Ctrl+S: guardar (archivo real) o abrir diálogo "Guardar como" (nota temporal)
   useEffect(() => {
@@ -641,6 +658,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
         onCutAll={handleCutAll}
         onPaste={handlePaste}
         onAttachToTask={handleAttachToTask}
+        isMarkdown={isMarkdown}
       />
 
       <div ref={splitContainerRef} className="flex min-h-0 flex-1 overflow-hidden">

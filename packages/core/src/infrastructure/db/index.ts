@@ -31,6 +31,9 @@ export async function runMigrations(db: IDatabase): Promise<void> {
     migration004,
     migration005,
     migration006,
+    migration007,
+    migration008,
+    migration009,
   ];
 
   for (let i = currentVersion; i < migrations.length; i++) {
@@ -218,4 +221,66 @@ async function migration006(db: IDatabase): Promise<void> {
     )
   `);
   await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (6)`);
+}
+
+/**
+ * Migración 007: Carpetas favoritas del explorador para acceso rápido.
+ * Idempotente: tolera "duplicate column" si la columna ya existe (p. ej. migración parcial previa).
+ */
+async function migration007(db: IDatabase): Promise<void> {
+  try {
+    const existing = await db.select<{ name: string }[]>(
+      "SELECT name FROM pragma_table_info('explorer_session') WHERE name = 'favorite_folders'"
+    );
+    if (existing.length === 0) {
+      await db.execute(`
+        ALTER TABLE explorer_session ADD COLUMN favorite_folders TEXT DEFAULT '[]'
+      `);
+    }
+  } catch (e) {
+    const msg = String(e).toLowerCase();
+    if (!msg.includes("duplicate column") && !msg.includes("duplicate column name")) throw e;
+    // La columna ya existe: continuar sin fallar
+  }
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (7)`);
+}
+
+/**
+ * Migración 008: Lenguaje por nota temporal (override de resaltado de sintaxis).
+ */
+async function migration008(db: IDatabase): Promise<void> {
+  try {
+    const existing = await db.select<{ name: string }[]>(
+      "SELECT name FROM pragma_table_info('explorer_session') WHERE name = 'temp_language_overrides'"
+    );
+    if (existing.length === 0) {
+      await db.execute(`
+        ALTER TABLE explorer_session ADD COLUMN temp_language_overrides TEXT DEFAULT '{}'
+      `);
+    }
+  } catch (e) {
+    const msg = String(e).toLowerCase();
+    if (!msg.includes("duplicate column") && !msg.includes("duplicate column name")) throw e;
+  }
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (8)`);
+}
+
+/**
+ * Migración 009: Panel de favoritos expandido/colapsado en el explorador.
+ */
+async function migration009(db: IDatabase): Promise<void> {
+  try {
+    const existing = await db.select<{ name: string }[]>(
+      "SELECT name FROM pragma_table_info('explorer_session') WHERE name = 'favorites_panel_expanded'"
+    );
+    if (existing.length === 0) {
+      await db.execute(`
+        ALTER TABLE explorer_session ADD COLUMN favorites_panel_expanded INTEGER DEFAULT 1
+      `);
+    }
+  } catch (e) {
+    const msg = String(e).toLowerCase();
+    if (!msg.includes("duplicate column") && !msg.includes("duplicate column name")) throw e;
+  }
+  await db.execute(`INSERT OR IGNORE INTO schema_version (version) VALUES (9)`);
 }

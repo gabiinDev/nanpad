@@ -5,11 +5,16 @@
 import type { TaskDTO } from "@nanpad/core";
 
 const STATUS_CONFIG: Record<TaskDTO["status"], { label: string; colorVar: string }> = {
-  todo:        { label: "por hacer",  colorVar: "--color-status-todo" },
-  in_progress: { label: "en curso",   colorVar: "--color-status-in-progress" },
-  done:        { label: "hecho",      colorVar: "--color-status-done" },
-  archived:    { label: "archivado",  colorVar: "--color-status-archived" },
+  todo:        { label: "Por hacer",   colorVar: "--color-status-todo" },
+  in_progress: { label: "En progreso", colorVar: "--color-status-in-progress" },
+  done:        { label: "Hecho",        colorVar: "--color-status-done" },
+  archived:    { label: "Archivado",   colorVar: "--color-status-archived" },
 };
+
+/** Etiqueta legible para un estado de tarea (para Command Palette, historial, etc.). */
+export function getStatusLabel(status: string): string {
+  return STATUS_CONFIG[status as TaskDTO["status"]]?.label ?? status;
+}
 
 const PRIORITY_CONFIG: Record<number, { label: string; color: string }> = {
   0: { label: "baja",    color: "var(--color-priority-low)" },

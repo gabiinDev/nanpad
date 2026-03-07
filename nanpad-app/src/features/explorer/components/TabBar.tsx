@@ -15,6 +15,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { OpenTab } from "@/store/useExplorerStore.ts";
 import { useExplorerStore } from "@/store/useExplorerStore.ts";
 import { saveFileDialog } from "@/infrastructure/FsService.ts";
+import { detectLanguage, languageToExt } from "@/features/explorer/utils/langDetect.ts";
 import {
   IconClose,
   IconNote,
@@ -40,6 +41,14 @@ interface SaveDialogProps {
  * Se renderiza sobre la app con un overlay oscuro.
  */
 function SaveConfirmDialog({ fileName, subtitle, onSave, onDiscard, onCancel }: SaveDialogProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
   return (
     <div
       style={{
@@ -50,6 +59,7 @@ function SaveConfirmDialog({ fileName, subtitle, onSave, onDiscard, onCancel }: 
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "2rem 1rem",
       }}
       onClick={onCancel}
     >
@@ -59,8 +69,10 @@ function SaveConfirmDialog({ fileName, subtitle, onSave, onDiscard, onCancel }: 
           border: "1px solid var(--color-border-strong)",
           borderRadius: "10px",
           padding: "24px 28px",
-          minWidth: "340px",
-          maxWidth: "420px",
+          minWidth: "min(340px, 100%)",
+          maxWidth: "min(420px, calc(100vw - 2rem))",
+          maxHeight: "calc(100vh - 4rem)",
+          overflowY: "auto",
           boxShadow: "var(--shadow-xl)",
           display: "flex",
           flexDirection: "column",
@@ -308,7 +320,7 @@ interface TabBarProps {
  * Barra de tabs. Maneja el flujo completo de cierre con confirmación.
  */
 export function TabBar({ onCloseTab }: TabBarProps) {
-  const { openTabs, activeTabId, setActiveTab, reorderTabs, createTempTab, saveTempAsDisk, saveTab } =
+  const { openTabs, activeTabId, setActiveTab, reorderTabs, createTempTab, saveTempAsDisk, saveTab, languageOverrides } =
     useExplorerStore();
   const tabsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -347,9 +359,12 @@ export function TabBar({ onCloseTab }: TabBarProps) {
     if (!pendingClose) return;
 
     if (pendingClose.isTemp) {
-      // Temporal: abrir file picker para elegir destino
+      // Temporal: abrir file picker para elegir destino (ext según idioma seleccionado)
       setPendingClose(null);
-      const defaultName = pendingClose.label.replace(/^#Temp\s+/, "nota") + ".txt";
+      const lang = languageOverrides[pendingClose.id] ?? detectLanguage(pendingClose.ext);
+      const ext = languageToExt(lang);
+      const baseName = pendingClose.label.replace(/^#Temp\s+/, "nota");
+      const defaultName = baseName.includes(".") ? baseName : `${baseName}.${ext}`;
       const diskPath = await saveFileDialog(defaultName);
       if (!diskPath) {
         // Usuario canceló el file picker: re-abrir el modal para que pueda reintentar
@@ -365,7 +380,7 @@ export function TabBar({ onCloseTab }: TabBarProps) {
       await saveTab(tabId);
       onCloseTab(tabId);
     }
-  }, [pendingClose, saveTempAsDisk, saveTab, onCloseTab]);
+  }, [pendingClose, saveTempAsDisk, saveTab, onCloseTab, languageOverrides]);
 
   const handleModalDiscard = useCallback(() => {
     if (!pendingClose) return;
@@ -382,11 +397,14 @@ export function TabBar({ onCloseTab }: TabBarProps) {
   // ── Guardar temporal sin cerrar (botón de disco en el tab) ───────────────
 
   const handleSaveToDisk = useCallback(async (tab: OpenTab) => {
-    const defaultName = tab.label.replace(/^#Temp\s+/, "nota") + ".txt";
+    const lang = languageOverrides[tab.id] ?? detectLanguage(tab.ext);
+    const ext = languageToExt(lang);
+    const baseName = tab.label.replace(/^#Temp\s+/, "nota");
+    const defaultName = baseName.includes(".") ? baseName : `${baseName}.${ext}`;
     const diskPath = await saveFileDialog(defaultName);
     if (!diskPath) return;
     await saveTempAsDisk(tab.id, diskPath);
-  }, [saveTempAsDisk]);
+  }, [saveTempAsDisk, languageOverrides]);
 
   const handleDrop = useCallback((toIndex: number) => {
     if (draggingIndex === null) return;

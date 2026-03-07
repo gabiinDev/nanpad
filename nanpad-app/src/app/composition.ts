@@ -20,6 +20,8 @@ import {
   UpdateSubtask,
   DeleteSubtask,
   AttachCodeToTask,
+  ListCodeSnippetsForTask,
+  DeleteCodeSnippet,
   GetTaskHistory,
   // Category
   CategorySqliteRepository,
@@ -77,6 +79,8 @@ export interface AppUseCases {
   updateSubtask: UpdateSubtask;
   deleteSubtask: DeleteSubtask;
   attachCodeToTask: AttachCodeToTask;
+  listCodeSnippetsForTask: ListCodeSnippetsForTask;
+  deleteCodeSnippet: DeleteCodeSnippet;
   getTaskHistory: GetTaskHistory;
   // Category
   createCategory: CreateCategory;
@@ -134,6 +138,8 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const updateSubtask = new UpdateSubtask(taskRepository);
   const deleteSubtask = new DeleteSubtask(taskRepository);
   const attachCodeToTask = new AttachCodeToTask(taskRepository);
+  const listCodeSnippetsForTask = new ListCodeSnippetsForTask(taskRepository);
+  const deleteCodeSnippet = new DeleteCodeSnippet(taskRepository);
   const getTaskHistory = new GetTaskHistory(historyRepository);
 
   // ─── UseCases de Category ────────────────────────────────────────────────────
@@ -204,6 +210,8 @@ export function buildComposition(db: IDatabase): AppUseCases {
     updateSubtask,
     deleteSubtask,
     attachCodeToTask,
+    listCodeSnippetsForTask,
+    deleteCodeSnippet,
     getTaskHistory,
     createCategory,
     updateCategory,

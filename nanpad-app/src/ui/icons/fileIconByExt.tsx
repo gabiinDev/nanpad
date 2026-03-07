@@ -47,6 +47,11 @@ const CODE_EXTS = new Set([
   // Config / data
   "json", "jsonc", "json5", "yaml", "yml", "toml", "xml",
   "graphql", "gql", "env", "env.example",
+  // Archivos de configuración sin extensión visible (.editorconfig, .gitignore, etc.)
+  "editorconfig", "gitignore", "npmrc", "nvmrc", "yarnrc",
+  "eslintrc", "prettierrc", "prettierignore", "dockerignore",
+  "cursorrules", "gitconfig", "dockerfile",
+  "babelrc", "browserslist",
   // Lenguajes
   "py", "pyw", "pyi", "rs", "go", "java", "c", "cpp", "cc", "cxx", "h", "hpp", "cs",
   "rb", "php", "swift", "kt", "kts", "scala", "hs", "lhs",
@@ -107,4 +112,21 @@ export function isPreviewableExt(ext: string | undefined): boolean {
 /** Comprueba si se puede abrir en editor (código o markdown). */
 export function canOpenInCode(ext: string | undefined): boolean {
   return isCodeExt(ext) || isPreviewableExt(ext);
+}
+
+/** Extensiones que no se pueden editar ni previsualizar (zip, exe, audio, imagen, video, etc.). */
+const NON_EDITABLE_EXTS = new Set([
+  ...ARCHIVE_EXTS,
+  ...IMAGE_EXTS,
+  ...VIDEO_EXTS,
+  ...AUDIO_EXTS,
+  ...PDF_EXTS,
+  ...WORD_EXTS,
+  ...EXCEL_EXTS,
+  "exe", "dll", "msi", "com", "app", "deb", "rpm", "dmg", "pkg", "so", "dylib",
+]);
+
+/** Comprueba si la extensión es NO editable (archivos comprimidos, ejecutables, multimedia, etc.). */
+export function isNonEditableExt(ext: string | undefined): boolean {
+  return NON_EDITABLE_EXTS.has(normExt(ext ?? ""));
 }

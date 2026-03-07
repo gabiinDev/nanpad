@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "@app/AppContext.tsx";
 import type { HistoryEntryDTO } from "@nanpad/core";
 import { IconClose } from "@ui/icons/index.tsx";
+import { getStatusLabel } from "@ui/components/Badge.tsx";
 
 interface TaskHistoryModalProps {
   taskId: string;
@@ -25,9 +26,23 @@ const ACTION_LABELS: Record<string, string> = {
   unassign: "Desasignación",
 };
 
-function formatDate(iso: string): string {
+/** Nombres de campo en español para el historial. */
+const FIELD_NAME_LABELS: Record<string, string> = {
+  status: "Estado",
+  completedAt: "Fecha de completado",
+  title: "Título",
+  description: "Descripción",
+  priority: "Prioridad",
+  categoryIds: "Categorías",
+  tagIds: "Etiquetas",
+};
+
+const LOCALE_AR = "es-AR";
+
+/** Fecha/hora en formato Argentina (dd/MM/yyyy, HH:mm). */
+function formatDateAr(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(LOCALE_AR, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -36,10 +51,32 @@ function formatDate(iso: string): string {
   });
 }
 
+function formatDate(iso: string): string {
+  return formatDateAr(iso);
+}
+
 function truncate(value: string | null, max = 60): string {
   if (value == null) return "—";
   const s = String(value);
   return s.length <= max ? s : s.slice(0, max) + "…";
+}
+
+/** Etiqueta legible del nombre del campo. */
+function getFieldNameLabel(fieldName: string | null): string {
+  if (fieldName == null) return "";
+  return FIELD_NAME_LABELS[fieldName] ?? fieldName;
+}
+
+/** Formatea el valor para mostrar en historial (status → etiqueta, completedAt → fecha AR). */
+function formatHistoryValue(fieldName: string | null, value: string | null): string {
+  if (value == null) return "—";
+  const s = String(value);
+  if (fieldName === "status") return getStatusLabel(s);
+  if (fieldName === "completedAt") {
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return formatDateAr(s);
+  }
+  return s;
 }
 
 export function TaskHistoryModal({ taskId, taskTitle, onClose }: TaskHistoryModalProps) {
@@ -76,13 +113,13 @@ export function TaskHistoryModal({ taskId, taskTitle, onClose }: TaskHistoryModa
 
   return (
     <div
-      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/50 backdrop-blur-sm py-8 px-4 sm:py-10 sm:px-6"
       onClick={onClose}
       role="dialog"
       aria-label="Historial de la tarea"
     >
       <div
-        className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
+        className="flex max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-5rem)] w-full max-w-lg flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
@@ -123,16 +160,16 @@ export function TaskHistoryModal({ taskId, taskTitle, onClose }: TaskHistoryModa
                   {(entry.fieldName != null || entry.oldValue != null || entry.newValue != null) && (
                     <div className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
                       {entry.fieldName != null && (
-                        <span className="text-[var(--color-text-muted)]">{entry.fieldName}: </span>
+                        <span className="text-[var(--color-text-muted)]">{getFieldNameLabel(entry.fieldName)}: </span>
                       )}
                       {entry.oldValue != null && (
-                        <span className="line-through opacity-80">{truncate(entry.oldValue, 50)}</span>
+                        <span className="line-through opacity-80">{truncate(formatHistoryValue(entry.fieldName ?? null, entry.oldValue), 50)}</span>
                       )}
                       {entry.oldValue != null && entry.newValue != null && (
                         <span className="mx-1 text-[var(--color-text-muted)]">→</span>
                       )}
                       {entry.newValue != null && (
-                        <span>{truncate(entry.newValue, 50)}</span>
+                        <span>{truncate(formatHistoryValue(entry.fieldName ?? null, entry.newValue), 50)}</span>
                       )}
                     </div>
                   )}

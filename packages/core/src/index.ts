@@ -137,6 +137,8 @@ export {
   UpdateSubtask,
   DeleteSubtask,
   AttachCodeToTask,
+  ListCodeSnippetsForTask,
+  DeleteCodeSnippet,
   GetTaskHistory,
   TaskSqliteRepository,
 } from "./modules/task/application/index";

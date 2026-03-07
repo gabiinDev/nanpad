@@ -6,7 +6,7 @@
  * - Menú contextual con modal de confirmación custom para eliminación.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { FsNode } from "@/infrastructure/FsService.ts";
 import { useExplorerStore } from "@/store/useExplorerStore.ts";
 import { detectLanguage } from "@features/explorer/utils/langDetect.ts";
@@ -16,6 +16,7 @@ import {
   IconFolderOpen,
   IconFolderNew,
   IconFileNew,
+  IconStar,
   IconFileText,
   IconDelete,
   IconEdit,
@@ -26,12 +27,84 @@ import {
   IconEditorMode,
   IconSplitMode,
   IconPreviewMode,
+  IconClose,
 } from "@ui/icons/index.tsx";
-import { canOpenInCode, isPreviewableExt } from "@ui/icons/fileIconByExt.tsx";
+import { canOpenInCode, isPreviewableExt, isNonEditableExt } from "@ui/icons/fileIconByExt.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
 
 function canPreview(ext?: string): boolean {
   return isPreviewableExt(ext);
+}
+
+/** Comprueba si el archivo se puede abrir/editar (no es zip, exe, audio, imagen, etc.). */
+function isFileOpenable(ext?: string): boolean {
+  if (isNonEditableExt(ext)) return false;
+  const n = (ext ?? "").replace(/^\./, "").toLowerCase();
+  return canOpenInCode(ext) || n === "";
+}
+
+/** Panel de favoritos colapsable, badges con X para quitar. */
+function FavoritesPanel({
+  favoriteFolders,
+  expanded,
+  onToggle,
+  setRoot,
+  removeFavoriteFolder,
+}: {
+  favoriteFolders: string[];
+  expanded: boolean;
+  onToggle: () => void;
+  setRoot: (path: string) => Promise<void>;
+  removeFavoriteFolder: (path: string) => void;
+}) {
+  return (
+    <div className="shrink-0 border-b border-[var(--color-border)] px-2.5 py-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-1.5 text-left"
+        title={expanded ? "Contraer favoritos" : "Expandir favoritos"}
+      >
+        <span className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+          <IconStar size={10} className="shrink-0 text-[var(--color-accent)]" />
+          Favoritos ({favoriteFolders.length})
+        </span>
+        <span className="shrink-0 text-[var(--color-text-muted)]" style={{ transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}>
+          <IconChevronDown size={10} />
+        </span>
+      </button>
+      {expanded && (
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {favoriteFolders.map((path) => {
+            const name = path.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? path;
+            return (
+              <span
+                key={path}
+                className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[0.6875rem] text-[var(--color-text-secondary)]"
+              >
+                <button
+                  type="button"
+                  onClick={() => void setRoot(path)}
+                  title={path}
+                  className="min-w-0 truncate text-left hover:text-[var(--color-text-primary)]"
+                >
+                  {name}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); removeFavoriteFolder(path); }}
+                  title="Quitar de favoritos"
+                  className="shrink-0 rounded p-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-priority-high)]/15 hover:text-[var(--color-priority-high)]"
+                >
+                  <IconClose size={10} />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Modal de confirmación (reutilizado de TabBar) ─────────────────────────────
@@ -47,6 +120,14 @@ interface ConfirmDialogProps {
  * Modal de confirmación de dos opciones (Confirmar / Cancelar).
  */
 function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel }: ConfirmDialogProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
   return (
     <div
       style={{
@@ -57,6 +138,7 @@ function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "2rem 1rem",
       }}
       onClick={onCancel}
     >
@@ -66,8 +148,10 @@ function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel
           border: "1px solid var(--color-border-strong)",
           borderRadius: "10px",
           padding: "24px 28px",
-          minWidth: "320px",
-          maxWidth: "420px",
+          minWidth: "min(320px, 100%)",
+          maxWidth: "min(420px, calc(100vw - 2rem))",
+          maxHeight: "calc(100vh - 4rem)",
+          overflowY: "auto",
           boxShadow: "var(--shadow-xl)",
           display: "flex",
           flexDirection: "column",
@@ -218,6 +302,9 @@ interface TreeNodeProps {
   node: FsNode;
   depth: number;
   onContextMenu: (e: React.MouseEvent, node: FsNode) => void;
+  favoriteFolders?: string[];
+  addFavoriteFolder?: (path: string) => void;
+  removeFavoriteFolder?: (path: string) => void;
   /** Si hay un inline action pendiente para este directorio, se pasa aquí para renderizarlo. */
   inlineChild?: InlineAction | null;
   onInlineConfirm: (name: string) => void;
@@ -230,7 +317,7 @@ interface TreeNodeProps {
   onRequestDelete?: (node: FsNode) => void;
 }
 
-function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, onInlineCancel, focusedPath, onFocus, onBlur, onRequestRename, onRequestDelete }: TreeNodeProps) {
+function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, onInlineCancel, focusedPath, onFocus, onBlur, onRequestRename, onRequestDelete, favoriteFolders, addFavoriteFolder, removeFavoriteFolder }: TreeNodeProps) {
   const { previewFile, openFile, pinTab, expandDir, collapseDir, openTabs, activeTabId } = useExplorerStore();
   const [expanding, setExpanding] = useState(false);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,6 +330,8 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
   const isPinned = !node.isDir && openTabs.some((t) => t.path === node.path && t.isPinned);
   const showActiveStyle = isActive || isFocused;
 
+  const openable = !node.isDir && isFileOpenable(node.ext);
+
   const handleClick = useCallback(() => {
     if (node.isDir) {
       if (isExpanded) collapseDir(node.path);
@@ -252,20 +341,21 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
       }
       return;
     }
+    if (!openable) return;
     // Single click en archivo: preview (con debounce para distinguir del doble click)
     if (clickTimer.current) clearTimeout(clickTimer.current);
     clickTimer.current = setTimeout(() => {
       void previewFile(node);
     }, 200);
-  }, [node, isExpanded, previewFile, expandDir, collapseDir]);
+  }, [node, isExpanded, openable, previewFile, expandDir, collapseDir]);
 
   const handleDoubleClick = useCallback(() => {
-    if (node.isDir) return;
+    if (node.isDir || !openable) return;
     // Cancelar el single click pendiente
     if (clickTimer.current) clearTimeout(clickTimer.current);
     // Doble click: abrir/fijar el tab
     void openFile(node);
-  }, [node, openFile]);
+  }, [node, openable, openFile]);
 
   // Fijar el tab al hacer doble click también sobre la pestaña activa en preview
   const handlePinClick = useCallback(() => {
@@ -312,8 +402,8 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
           onClick={handleClick}
           onDoubleClick={handleDoubleClick}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, node); }}
-          title={isOpen && !isPinned ? `${node.name} (vista previa — doble click para fijar)` : node.path}
-          className="flex min-h-[2.75rem] cursor-pointer select-none items-center gap-1.5 rounded-md text-[0.8125rem] outline-none transition-colors duration-150"
+          title={!node.isDir && !openable ? `${node.name} (no editable)` : isOpen && !isPinned ? `${node.name} (vista previa — doble click para fijar)` : node.path}
+          className="group flex min-h-[2.75rem] cursor-pointer select-none items-center gap-1.5 rounded-md text-[0.8125rem] outline-none transition-colors duration-150"
           style={{
             paddingLeft: `${indent + 8}px`,
             paddingRight: "0.5rem",
@@ -322,6 +412,8 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
             background: showActiveStyle ? "var(--color-surface-hover)" : "transparent",
             color: showActiveStyle ? "var(--color-text-primary)" : "var(--color-text-secondary)",
             fontWeight: showActiveStyle ? 500 : 400,
+            opacity: !node.isDir && !openable ? 0.6 : 1,
+            cursor: "pointer",
           }}
           onMouseEnter={(e) => {
             if (!showActiveStyle) (e.currentTarget as HTMLElement).style.background = "color-mix(in oklch, var(--color-surface-hover) 60%, transparent)";
@@ -371,6 +463,34 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
             {node.name}
           </span>
 
+          {/* Icono favorito en carpetas: visible siempre si es favorito, al hover si no */}
+          {node.isDir && addFavoriteFolder && removeFavoriteFolder && favoriteFolders && (
+            <span
+              className={`ml-auto flex shrink-0 ${(() => {
+                const norm = node.path.replace(/\\/g, "/").replace(/\/$/, "") || node.path;
+                return favoriteFolders.includes(norm) ? "opacity-100" : "opacity-0 group-hover:opacity-100";
+              })()}`}
+              style={{ transition: "opacity 0.15s" }}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            >
+              {(() => {
+                const norm = node.path.replace(/\\/g, "/").replace(/\/$/, "") || node.path;
+                const isFav = favoriteFolders.includes(norm);
+                return (
+                  <button
+                    type="button"
+                    title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); isFav ? removeFavoriteFolder(node.path) : addFavoriteFolder(node.path); }}
+                    className="rounded p-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-active)] hover:text-[var(--color-accent)]"
+                    style={{ color: isFav ? "var(--color-accent)" : undefined }}
+                  >
+                    <IconStar size={12} />
+                  </button>
+                );
+              })()}
+            </span>
+          )}
+
           {/* Indicador de archivo abierto y fijado */}
           {isOpen && !isActive && isPinned && (
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-accent)", flexShrink: 0, opacity: 0.6 }} />
@@ -395,6 +515,9 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
               onBlur={onBlur}
               onRequestRename={onRequestRename}
               onRequestDelete={onRequestDelete}
+              favoriteFolders={favoriteFolders}
+              addFavoriteFolder={addFavoriteFolder}
+              removeFavoriteFolder={removeFavoriteFolder}
             />
           ))}
 
@@ -440,7 +563,7 @@ interface DeleteConfirm { node: FsNode; }
  * Árbol de archivos navegable con menú contextual completo.
  */
 export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
-  const { tree, loadingTree, reloadTree, createNewFile, createNewDir, deleteNode, renameNode, openFile } =
+  const { tree, loadingTree, reloadTree, createNewFile, createNewDir, deleteNode, renameNode, openFile, favoriteFolders, favoritesPanelExpanded, setFavoritesPanelExpanded, addFavoriteFolder, removeFavoriteFolder, setRoot, rootPath } =
     useExplorerStore();
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
   const [inlineAction, setInlineAction] = useState<InlineAction | null>(null);
@@ -457,7 +580,13 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
     const items: ContextMenuItem[] = [];
 
     if (node.isDir) {
+      const isFav = favoriteFolders.includes(node.path.replace(/\\/g, "/").replace(/\/$/, "") || node.path);
       items.push(
+        {
+          label: isFav ? "Quitar de favoritos" : "Agregar a favoritos",
+          faIcon: <IconStar size={13} />,
+          onClick: () => (isFav ? removeFavoriteFolder(node.path) : addFavoriteFolder(node.path)),
+        },
         {
           label: "Nuevo archivo",
           faIcon: <IconFileNew size={13} />,
@@ -471,38 +600,41 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
         }
       );
     } else {
-      const lang = detectLanguage(node.ext);
-      const hasSyntax = lang !== "plaintext" || canOpenInCode(node.ext);
-      const hasPreview = canPreview(node.ext);
+      const openable = isFileOpenable(node.ext);
+      if (openable) {
+        const lang = detectLanguage(node.ext);
+        const hasSyntax = lang !== "plaintext" || canOpenInCode(node.ext);
+        const hasPreview = canPreview(node.ext);
 
-      items.push({
-        label: "Abrir",
-        faIcon: <IconFileText size={13} />,
-        onClick: () => void openFile(node),
-      });
+        items.push({
+          label: "Abrir",
+          faIcon: <IconFileText size={13} />,
+          onClick: () => void openFile(node),
+        });
 
-      if (hasSyntax) {
-        items.push({
-          label: "Abrir en modo código",
-          faIcon: <IconEditorMode size={13} />,
-          onClick: () => openWithMode(openFile, node, "editor"),
-        });
-      }
+        if (hasSyntax) {
+          items.push({
+            label: "Abrir en modo código",
+            faIcon: <IconEditorMode size={13} />,
+            onClick: () => openWithMode(openFile, node, "editor"),
+          });
+        }
 
-      if (hasPreview) {
-        items.push({
-          label: "Vista dividida",
-          faIcon: <IconSplitMode size={13} />,
-          onClick: () => openWithMode(openFile, node, "split"),
-        });
-        items.push({
-          label: "Vista previa",
-          faIcon: <IconPreviewMode size={13} />,
-          onClick: () => openWithMode(openFile, node, "preview"),
-          separator: true,
-        });
-      } else {
-        items[items.length - 1] = { ...items[items.length - 1], separator: true };
+        if (hasPreview) {
+          items.push({
+            label: "Vista dividida",
+            faIcon: <IconSplitMode size={13} />,
+            onClick: () => openWithMode(openFile, node, "split"),
+          });
+          items.push({
+            label: "Vista previa",
+            faIcon: <IconPreviewMode size={13} />,
+            onClick: () => openWithMode(openFile, node, "preview"),
+            separator: true,
+          });
+        } else {
+          items[items.length - 1] = { ...items[items.length - 1], separator: true };
+        }
       }
     }
 
@@ -521,7 +653,7 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
     );
 
     return items;
-  }, [openFile]);
+  }, [openFile, favoriteFolders, addFavoriteFolder, removeFavoriteFolder]);
 
   const handleInlineConfirm = useCallback(async (name: string) => {
     if (!inlineAction) return;
@@ -561,6 +693,29 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
         </div>
       </div>
 
+      {/* Favoritos: badges colapsables con X para quitar */}
+      {favoriteFolders.length > 0 && (
+        <FavoritesPanel
+          favoriteFolders={favoriteFolders}
+          expanded={favoritesPanelExpanded}
+          onToggle={() => setFavoritesPanelExpanded(!favoritesPanelExpanded)}
+          setRoot={setRoot}
+          removeFavoriteFolder={removeFavoriteFolder}
+        />
+      )}
+
+      {/* Nombre de la carpeta raíz actual */}
+      {rootPath && (
+        <div
+          className="shrink-0 border-b border-[var(--color-border)] px-3 py-2"
+          title={rootPath}
+        >
+          <span className="text-[0.75rem] font-medium text-[var(--color-text-secondary)]">
+            {rootPath.split(/[\\/]/).filter(Boolean).pop() ?? rootPath}
+          </span>
+        </div>
+      )}
+
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
         {loadingTree ? (
           <div className="flex justify-center py-5">
@@ -585,6 +740,9 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
               onBlur={() => setFocusedPath(null)}
               onRequestRename={(n) => setInlineAction({ type: "rename", node: n })}
               onRequestDelete={(n) => setDeleteConfirm({ node: n })}
+              favoriteFolders={favoriteFolders}
+              addFavoriteFolder={addFavoriteFolder}
+              removeFavoriteFolder={removeFavoriteFolder}
             />
           ))
         )}

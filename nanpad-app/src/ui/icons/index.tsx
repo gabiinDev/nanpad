@@ -59,6 +59,11 @@ import {
   faScissors,
   faPaste,
   faCircleQuestion,
+  faStar,
+  faTriangleExclamation,
+  faCircleInfo,
+  faExpand,
+  faCompress,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   faSquare,
@@ -212,6 +217,15 @@ export const IconPreviewMode = fa(faEye);
 /** Búsqueda / lupa */
 export const IconSearch = fa(faMagnifyingGlass);
 export const IconHelp = fa(faCircleQuestion);
+export const IconStar = fa(faStar);
+/** Advertencia (toast warning) */
+export const IconWarning = fa(faTriangleExclamation);
+/** Información (toast info) */
+export const IconInfo = fa(faCircleInfo);
+/** Expandir / pantalla completa */
+export const IconExpand = fa(faExpand);
+/** Contraer / salir de pantalla completa */
+export const IconCompress = fa(faCompress);
 
 /* ── Spinner ─────────────────────────────────────────────────── */
 /** Indicador de carga (animado vía Tailwind spin) */

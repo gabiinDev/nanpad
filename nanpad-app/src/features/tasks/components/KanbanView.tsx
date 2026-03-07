@@ -7,17 +7,22 @@
 import { useState, useCallback } from "react";
 import type { TaskDTO } from "@nanpad/core";
 import { PriorityBadge } from "@ui/components/Badge.tsx";
+import { CategoryBadge } from "@ui/components/CategoryBadge.tsx";
 import { ContextMenu, type ContextMenuItem } from "@ui/components/ContextMenu.tsx";
-import { IconEdit, IconProgress, IconRestore, IconCheck, IconArchive, IconPlus, IconClock } from "@ui/icons/index.tsx";
+import { SubtaskCheckbox } from "@ui/components/SubtaskCheckbox.tsx";
+import { IconEdit, IconProgress, IconRestore, IconCheck, IconArchive, IconPlus, IconClock, IconChevronDown, IconChevron } from "@ui/icons/index.tsx";
 
 interface KanbanViewProps {
   tasks: TaskDTO[];
+  categories: import("@nanpad/core").CategoryDTO[];
   onEdit: (task: TaskDTO) => void;
   onMoveStatus: (taskId: string, newStatus: TaskDTO["status"]) => void;
   /** Al hacer click derecho en el contenedor de una columna. */
   onAddTask?: () => void;
   /** Abrir modal de historial de la tarea. */
   onShowHistory?: (task: TaskDTO) => void;
+  /** Alternar subtarea completada desde la vista (sin abrir modal). */
+  onToggleSubtask?: (task: TaskDTO, subtaskId: string) => void;
 }
 
 interface ContextState { x: number; y: number; task: TaskDTO; }
@@ -48,14 +53,23 @@ const DT_KEY = "nanpad/task-id";
 /** Tarjeta arrastrable con glow de prioridad y estética técnica. */
 function KanbanCard({
   task,
+  categories,
   onEdit,
   onContextMenu,
+  expandedSubtaskIds,
+  onToggleExpandSubtasks,
+  onToggleSubtask,
 }: {
   task: TaskDTO;
+  categories: import("@nanpad/core").CategoryDTO[];
   onEdit: (t: TaskDTO) => void;
   onContextMenu: (e: React.MouseEvent, t: TaskDTO) => void;
+  expandedSubtaskIds: Set<string>;
+  onToggleExpandSubtasks: (taskId: string) => void;
+  onToggleSubtask?: (task: TaskDTO, subtaskId: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const expanded = expandedSubtaskIds.has(task.id);
 
   return (
     <div
@@ -64,13 +78,10 @@ function KanbanCard({
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData(DT_KEY, task.id);
       }}
-      onClick={() => { onEdit(task); }}
       onContextMenu={(e) => { onContextMenu(e, task); }}
       onMouseEnter={() => { setHovered(true); }}
       onMouseLeave={() => { setHovered(false); }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") onEdit(task); }}
+      role="article"
       style={{
         background: hovered ? "var(--color-surface-hover)" : "var(--color-surface-2)",
         borderTop: `1px solid ${hovered ? "var(--color-border-strong)" : "var(--color-border)"}`,
@@ -86,18 +97,32 @@ function KanbanCard({
         boxShadow: hovered ? "var(--shadow-md)" : "var(--shadow-sm)",
       }}
     >
-      <p
-        style={{
-          fontSize: "14px",
-          fontWeight: 500,
-          color: hovered ? "var(--color-text-primary)" : "var(--color-text-secondary)",
-          lineHeight: 1.45,
-          marginBottom: task.description ? "5px" : "10px",
-          transition: "color 0.12s ease",
-        }}
-      >
-        {task.title}
-      </p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px", marginBottom: task.description ? "5px" : "10px" }}>
+        <p
+          style={{
+            flex: 1,
+            minWidth: 0,
+            fontSize: "14px",
+            fontWeight: 500,
+            color: hovered ? "var(--color-text-primary)" : "var(--color-text-secondary)",
+            lineHeight: 1.45,
+            margin: 0,
+            transition: "color 0.12s ease",
+          }}
+        >
+          {task.title}
+        </p>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(task); }}
+          title="Editar tarea"
+          aria-label="Editar tarea"
+          className="flex shrink-0 items-center justify-center rounded p-1 transition-colors hover:bg-[var(--color-surface-hover)]"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <IconEdit size={12} />
+        </button>
+      </div>
       {task.description && (
         <p
           style={{
@@ -115,14 +140,84 @@ function KanbanCard({
           {task.description}
         </p>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      {task.categoryIds.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "8px" }}>
+          {task.categoryIds.map((catId) => {
+            const cat = categories.find((c) => c.id === catId);
+            return cat ? <CategoryBadge key={cat.id} category={cat} compact /> : null;
+          })}
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "4px" }}>
         <PriorityBadge priority={task.priority} />
         {task.subtasks.length > 0 && (
-          <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>
-            {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
-          </span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpandSubtasks(task.id);
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              fontSize: "12px",
+              color: "var(--color-text-muted)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: "2px 4px",
+            }}
+          >
+            {expanded ? <IconChevronDown size={10} /> : <IconChevron size={10} />}
+            Subtareas {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
+          </button>
         )}
       </div>
+      {expanded && task.subtasks.length > 0 && (
+        <div
+          style={{
+            marginTop: "8px",
+            paddingTop: "8px",
+            borderTop: "1px solid var(--color-border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {task.subtasks.map((s) => {
+            const checkboxId = `subtask-kanban-${task.id}-${s.id}`;
+            return (
+              <div key={s.id} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "12px" }}>
+                {onToggleSubtask ? (
+                  <SubtaskCheckbox
+                    id={checkboxId}
+                    checked={s.completed}
+                    onChange={() => onToggleSubtask(task, s.id)}
+                    aria-label={`Marcar "${s.title}" como completada`}
+                  />
+                ) : null}
+                <label
+                  htmlFor={onToggleSubtask ? checkboxId : undefined}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    overflowWrap: "break-word",
+                    wordBreak: "break-word",
+                    color: "var(--color-text-secondary)",
+                    textDecoration: s.completed ? "line-through" : "none",
+                    opacity: s.completed ? 0.7 : 1,
+                    cursor: onToggleSubtask ? "pointer" : "default",
+                  }}
+                >
+                  {s.title}
+                </label>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -131,17 +226,25 @@ function KanbanCard({
 function KanbanColumn({
   column,
   tasks,
+  categories,
   onEdit,
   onDrop,
   onContextMenu,
   onAddTask,
+  expandedSubtaskIds,
+  onToggleExpandSubtasks,
+  onToggleSubtask,
 }: {
   column: Column;
   tasks: TaskDTO[];
+  categories: import("@nanpad/core").CategoryDTO[];
   onEdit: (t: TaskDTO) => void;
   onDrop: (taskId: string, status: TaskDTO["status"]) => void;
   onContextMenu: (e: React.MouseEvent, t: TaskDTO) => void;
   onAddTask?: () => void;
+  expandedSubtaskIds: Set<string>;
+  onToggleExpandSubtasks: (taskId: string) => void;
+  onToggleSubtask?: (task: TaskDTO, subtaskId: string) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [columnMenuPos, setColumnMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -230,8 +333,12 @@ function KanbanColumn({
           <KanbanCard
             key={task.id}
             task={task}
+            categories={categories}
             onEdit={onEdit}
             onContextMenu={onContextMenu}
+            expandedSubtaskIds={expandedSubtaskIds}
+            onToggleExpandSubtasks={onToggleExpandSubtasks}
+            onToggleSubtask={onToggleSubtask}
           />
         ))}
 
@@ -270,8 +377,9 @@ function KanbanColumn({
 }
 
 /** Vista Kanban principal. */
-export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask, onShowHistory }: KanbanViewProps) {
+export function KanbanView({ tasks, categories, onEdit, onMoveStatus, onAddTask, onShowHistory, onToggleSubtask }: KanbanViewProps) {
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
+  const [expandedSubtaskIds, setExpandedSubtaskIds] = useState<Set<string>>(new Set());
 
   const handleDrop = (taskId: string, status: TaskDTO["status"]) => {
     const task = tasks.find((t) => t.id === taskId);
@@ -326,10 +434,21 @@ export function KanbanView({ tasks, onEdit, onMoveStatus, onAddTask, onShowHisto
             key={col.status}
             column={col}
             tasks={tasks.filter((t) => t.status === col.status)}
+            categories={categories}
             onEdit={onEdit}
             onDrop={handleDrop}
             onContextMenu={handleContextMenu}
             onAddTask={onAddTask}
+            expandedSubtaskIds={expandedSubtaskIds}
+            onToggleExpandSubtasks={(taskId) => {
+              setExpandedSubtaskIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(taskId)) next.delete(taskId);
+                else next.add(taskId);
+                return next;
+              });
+            }}
+            onToggleSubtask={onToggleSubtask}
           />
         ))}
       </div>

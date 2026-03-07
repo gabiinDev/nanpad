@@ -8,6 +8,7 @@ import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore.ts";
 import { useApp } from "@app/AppContext.tsx";
 import { useTaskStore } from "@/store/useTaskStore.ts";
+import { useToastStore } from "@/store/useToastStore.ts";
 import { useCategoryStore } from "@/store/useCategoryStore.ts";
 import { useAppSettingsStore } from "@/store/useAppSettingsStore.ts";
 import { TaskListView } from "./components/TaskListView.tsx";
@@ -15,6 +16,8 @@ import { KanbanView } from "./components/KanbanView.tsx";
 import { TaskForm } from "./components/TaskForm.tsx";
 import { TaskHistoryModal } from "./components/TaskHistoryModal.tsx";
 import { TaskSearchBar, taskMatchesQuery, type TaskSearchBarRef } from "./components/TaskSearchBar.tsx";
+import { CategoriesSection } from "./components/CategoriesSection.tsx";
+import { CategoryBadge } from "@ui/components/CategoryBadge.tsx";
 import { Spinner } from "@ui/components/Spinner.tsx";
 import type { TaskDTO, CreateTaskInput, UpdateTaskInput } from "@nanpad/core";
 
@@ -58,6 +61,7 @@ export default function TasksPage() {
     setView,
     taskUndoStack,
     taskRedoStack,
+    replaceTask,
     undoTaskChange,
     redoTaskChange,
     setTaskUndoStacks,
@@ -66,6 +70,7 @@ export default function TasksPage() {
 
   const [editingTask, setEditingTask] = useState<TaskDTO | null | undefined>(undefined);
   const [historyTask, setHistoryTask] = useState<TaskDTO | null>(null);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   // undefined = cerrado, null = nuevo, TaskDTO = edición
   const [searchQuery, setSearchQuery] = useState("");
   const taskSearchBarRef = useRef<TaskSearchBarRef>(null);
@@ -138,8 +143,10 @@ export default function TasksPage() {
     async (input: CreateTaskInput | UpdateTaskInput) => {
       if ("id" in input) {
         await updateTask(uc, input as UpdateTaskInput);
+        useToastStore.getState().toast("Tarea actualizada");
       } else {
         await createTask(uc, input as CreateTaskInput);
+        useToastStore.getState().toast("Tarea creada");
       }
     },
     [uc, createTask, updateTask]
@@ -153,6 +160,27 @@ export default function TasksPage() {
   const filteredAllTasks = useMemo(
     () => allTasks.filter((t) => taskMatchesQuery(t, searchQuery)),
     [allTasks, searchQuery]
+  );
+
+  const handleToggleSubtask = useCallback(
+    async (task: TaskDTO, subtaskId: string) => {
+      const sub = task.subtasks.find((s) => s.id === subtaskId);
+      if (!sub) return;
+      try {
+        await uc.updateSubtask.execute({ taskId: task.id, subtaskId, completed: !sub.completed });
+        const updated: TaskDTO = {
+          ...task,
+          subtasks: task.subtasks.map((s) =>
+            s.id === subtaskId ? { ...s, completed: !s.completed } : s
+          ),
+        };
+        replaceTask(updated);
+        useToastStore.getState().toast("Subtarea actualizada");
+      } catch {
+        void loadTasks(uc);
+      }
+    },
+    [uc, replaceTask, loadTasks]
   );
 
   const toggleCategoryFilter = useCallback(
@@ -239,32 +267,33 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Filtros de categoría */}
-        {categories.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="shrink-0 text-xs text-[var(--color-text-muted)]">Categoría:</span>
-            <div className="flex gap-1.5 overflow-x-auto">
-              {categories.map((cat) => {
+        {/* Filtros de categoría + gestionar */}
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-xs text-[var(--color-text-muted)]">Categoría:</span>
+          <div className="flex flex-1 items-center gap-1.5 overflow-x-auto">
+            {categories.map((cat) => {
                 const active = filters.categoryId === cat.id;
                 return (
-                  <button
+                  <CategoryBadge
                     key={cat.id}
-                    type="button"
+                    category={cat}
+                    active={active}
+                    colorMode="filter"
+                    activeFilterId={filters.categoryId ?? null}
                     onClick={() => { toggleCategoryFilter(cat.id); }}
-                    className="min-h-[2.75rem] shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-[0.8125rem] transition-all duration-150"
-                    style={{
-                      borderColor: active ? "var(--color-accent)" : "var(--color-border)",
-                      background: active ? "var(--color-accent-subtle)" : "transparent",
-                      color: active ? "var(--color-accent)" : "var(--color-text-muted)",
-                    }}
-                  >
-                    {cat.name}
-                  </button>
+                  />
                 );
               })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowCategoriesModal(true)}
+              title="Gestionar categorías"
+              className="shrink-0 rounded-md border border-dashed border-[var(--color-border)] px-2 py-1.5 text-[0.8125rem] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            >
+              + Gestionar
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* ─── Contenido ────────────────────────────────────────────────── */}
@@ -276,20 +305,24 @@ export default function TasksPage() {
         ) : view === "list" ? (
           <TaskListView
             tasks={filteredTasks}
+            categories={categories}
             onEdit={setEditingTask}
-            onComplete={(id) => { void completeTask(uc, id); }}
-            onRestore={(id) => { void restoreTask(uc, id); }}
-            onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status); }}
+            onComplete={(id) => { void completeTask(uc, id).then(() => useToastStore.getState().toast("Tarea completada")); }}
+            onRestore={(id) => { void restoreTask(uc, id).then(() => useToastStore.getState().toast("Tarea restaurada")); }}
+            onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status).then(() => useToastStore.getState().toast("Estado actualizado")); }}
             onAddTask={() => setEditingTask(null)}
             onShowHistory={setHistoryTask}
+            onToggleSubtask={handleToggleSubtask}
           />
         ) : (
           <KanbanView
             tasks={filteredAllTasks}
+            categories={categories}
             onEdit={setEditingTask}
-            onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status); }}
+            onMoveStatus={(id, status) => { void moveTaskStatus(uc, id, status).then(() => useToastStore.getState().toast("Estado actualizado")); }}
             onAddTask={() => setEditingTask(null)}
             onShowHistory={setHistoryTask}
+            onToggleSubtask={handleToggleSubtask}
           />
         )}
       </div>
@@ -307,6 +340,44 @@ export default function TasksPage() {
           onSubtaskChange={editingTask ? (updated) => setEditingTask(updated) : undefined}
           onShowHistory={editingTask ? () => setHistoryTask(editingTask) : undefined}
         />
+      )}
+      {/* Modal ABM de categorías */}
+      {showCategoriesModal && uc && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 py-8 px-4 sm:py-10 sm:px-6"
+          onClick={() => setShowCategoriesModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="categories-modal-title"
+        >
+          <div
+            className="flex max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-5rem)] w-full max-w-md flex-col rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="shrink-0 p-6 pb-0">
+              <h2 id="categories-modal-title" className="mb-4 text-base font-semibold text-[var(--color-text-primary)]">
+                Gestionar categorías
+              </h2>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-6">
+            <CategoriesSection
+              uc={uc}
+              categories={categories}
+              loadCategories={loadCategories}
+              onCloseRequest={() => setShowCategoriesModal(false)}
+            />
+            </div>
+            <div className="shrink-0 mt-4 flex justify-end p-6 pt-4 border-t border-[var(--color-border)]">
+              <button
+                type="button"
+                onClick={() => setShowCategoriesModal(false)}
+                className="rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-active)]"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {historyTask && (
         <TaskHistoryModal

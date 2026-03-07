@@ -162,6 +162,10 @@ export class TaskSqliteRepository implements ITaskRepository {
     return rows.map(rowToCodeSnippet);
   }
 
+  async deleteCodeSnippet(snippetId: EntityId): Promise<void> {
+    await this.db.execute("DELETE FROM task_code_snippets WHERE id = $1", [snippetId]);
+  }
+
   // ─── Helpers privados ─────────────────────────────────────────────────────
 
   private async rowToTask(row: TaskRow): Promise<Task> {

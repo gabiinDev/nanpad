@@ -64,4 +64,10 @@ export interface ITaskRepository {
    * @param taskId - ID de la tarea.
    */
   findCodeSnippets(taskId: EntityId): Promise<CodeSnippet[]>;
+
+  /**
+   * Elimina un fragmento de código adjunto.
+   * @param snippetId - ID del snippet.
+   */
+  deleteCodeSnippet(snippetId: EntityId): Promise<void>;
 }

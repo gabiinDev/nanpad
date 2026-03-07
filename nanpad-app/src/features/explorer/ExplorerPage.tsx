@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useApp } from "@app/AppContext.tsx";
 import { useExplorerStore, getSessionFromStore, type PersistedSession } from "@/store/useExplorerStore.ts";
 import { useExplorerFloatingSearchStore } from "@/store/useExplorerFloatingSearchStore.ts";
@@ -32,15 +33,46 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
     activeTabId,
     mdViewModes,
     closedTabsStack,
+    favoriteFolders,
+    favoritesPanelExpanded,
+    languageOverrides,
     initialized,
     init,
     setRoot,
     closeTab,
+    openFileByPath,
     createTempTab,
     restoreLastClosedTab,
   } = useExplorerStore();
 
   const setFloatingSearchOpen = useExplorerFloatingSearchStore((s) => s.setOpen);
+
+  // Drag & drop de archivos externos: abrir como tab al soltar
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const webview = getCurrentWebview();
+        const fn = await webview.onDragDropEvent((event) => {
+          if (event.payload.type === "drop" && event.payload.paths?.length) {
+            const path = event.payload.paths[0];
+            if (path && typeof path === "string") {
+              void openFileByPath(path);
+            }
+          }
+        });
+        if (!cancelled) unlisten = fn;
+        else fn();
+      } catch {
+        // No disponible en entorno no-Tauri (ej. navegador)
+      }
+    })();
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, [openFileByPath]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -98,7 +130,7 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
     if (saveTimeoutRef.current !== null) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       saveTimeoutRef.current = null;
-      const session = getSessionFromStore(openTabs, activeTabId, mdViewModes, closedTabsStack);
+      const session = getSessionFromStore(openTabs, activeTabId, mdViewModes, closedTabsStack, favoriteFolders, languageOverrides, favoritesPanelExpanded);
       void saveExplorerSession(session);
     }, DEBOUNCE_MS);
     return () => {
@@ -107,7 +139,7 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
         saveTimeoutRef.current = null;
       }
     };
-  }, [initialized, openTabs, activeTabId, mdViewModes, closedTabsStack, saveExplorerSession]);
+  }, [initialized, openTabs, activeTabId, mdViewModes, closedTabsStack, favoriteFolders, favoritesPanelExpanded, languageOverrides, saveExplorerSession]);
 
   // Flush al cerrar/ocultar la ventana para no perder el último estado
   useEffect(() => {
@@ -118,7 +150,10 @@ export default function ExplorerPage({ isDark }: ExplorerPageProps) {
         state.openTabs,
         state.activeTabId,
         state.mdViewModes,
-        state.closedTabsStack
+        state.closedTabsStack,
+        state.favoriteFolders,
+        state.languageOverrides,
+        state.favoritesPanelExpanded
       );
       void saveExplorerSession(session);
     };

@@ -8,6 +8,7 @@
 
 import { create } from "zustand";
 import type { FsNode, TempFileMeta } from "@/infrastructure/FsService.ts";
+import { isNonEditableExt, canOpenInCode } from "@/ui/icons/fileIconByExt.tsx";
 import {
   listDir,
   readFile,
@@ -20,6 +21,8 @@ import {
   deleteTempFile,
   saveFileDialog,
 } from "@/infrastructure/FsService.ts";
+import { useToastStore } from "@/store/useToastStore.ts";
+import { detectLanguage, languageToExt } from "@/features/explorer/utils/langDetect.ts";
 
 const ROOT_PATH_KEY = "nanpad_explorer_root";
 const MAX_PERSISTED_REAL_TABS = 30;
@@ -39,7 +42,7 @@ export interface ClosedTabInfo {
 /** Modo de panel para archivos .md en el editor. */
 export type MdPanelMode = "editor" | "split" | "preview";
 
-/** Sesión persistida: solo paths de tabs reales fijados y tab activo (para SQLite). */
+/** Sesión persistida: solo paths de tabs reales fijados, tab activo y favoritos (para SQLite). */
 export interface PersistedSession {
   /** Paths en el orden actual de la barra de tabs (incluye drag-and-drop). */
   realTabIds: string[];
@@ -48,6 +51,12 @@ export interface PersistedSession {
   mdViewModes?: Record<string, { mode: MdPanelMode; splitRatio: number }>;
   /** Últimos tabs cerrados (máx. 10) para restaurar con Ctrl+Shift+Z. */
   closedTabsStack?: ClosedTabInfo[];
+  /** Rutas absolutas de carpetas favoritas para acceso rápido. */
+  favoriteFolders?: string[];
+  /** Si el panel de favoritos está expandido (true) o colapsado (false). */
+  favoritesPanelExpanded?: boolean;
+  /** Override de lenguaje por tabId (notas temporales y archivos). */
+  tempLanguageOverrides?: Record<string, string>;
 }
 
 /**
@@ -60,7 +69,10 @@ export function getSessionFromStore(
   openTabs: OpenTab[],
   activeTabId: string | null,
   mdViewModes: Record<string, { mode: MdPanelMode; splitRatio: number }>,
-  closedTabsStack?: ClosedTabInfo[]
+  closedTabsStack?: ClosedTabInfo[],
+  favoriteFolders?: string[],
+  tempLanguageOverrides?: Record<string, string>,
+  favoritesPanelExpanded?: boolean
 ): PersistedSession {
   const real = openTabs.filter((t) => t.path !== null && t.isPinned && !t.isTemp);
   const realTabIds = real.map((t) => t.path as string).slice(0, MAX_PERSISTED_REAL_TABS);
@@ -77,11 +89,15 @@ export function getSessionFromStore(
     if (tab && isMd(tab.ext)) mdViewModesFiltered[tabId] = value;
   }
   const closed = closedTabsStack?.length ? closedTabsStack.slice(-MAX_CLOSED_TABS) : undefined;
+  const langOverrides = tempLanguageOverrides && Object.keys(tempLanguageOverrides).length > 0 ? tempLanguageOverrides : undefined;
   return {
     realTabIds,
     activeTabId: active,
     mdViewModes: Object.keys(mdViewModesFiltered).length > 0 ? mdViewModesFiltered : undefined,
     closedTabsStack: closed,
+    favoriteFolders: favoriteFolders?.length ? favoriteFolders : undefined,
+    favoritesPanelExpanded: favoritesPanelExpanded ?? true,
+    tempLanguageOverrides: langOverrides,
   };
 }
 
@@ -139,6 +155,16 @@ interface ExplorerStore {
   tabBaselineContent: Record<string, string>;
   /** Últimos tabs cerrados (máx. 10), el más reciente al final; se restaura con Ctrl+Shift+Z. */
   closedTabsStack: ClosedTabInfo[];
+  /** Rutas absolutas de carpetas favoritas para acceso rápido. */
+  favoriteFolders: string[];
+  /** Si el panel de favoritos está expandido (true) o colapsado (false). */
+  favoritesPanelExpanded: boolean;
+  /** Override de lenguaje por tabId (notas temporales y archivos). */
+  languageOverrides: Record<string, string>;
+
+  // ── Acciones ───────────────────────────────────────────────────────────────
+  /** Establece el override de lenguaje para un tab. */
+  setLanguageOverride: (tabId: string, lang: string) => void;
 
   // ── Inicialización ─────────────────────────────────────────────────────────
   /**
@@ -158,6 +184,12 @@ interface ExplorerStore {
   expandDir: (nodePath: string) => Promise<void>;
   /** Colapsa un directorio (descarta sus hijos del árbol en memoria). */
   collapseDir: (nodePath: string) => void;
+  /** Añade una carpeta a favoritos. */
+  addFavoriteFolder: (path: string) => void;
+  /** Quita una carpeta de favoritos. */
+  removeFavoriteFolder: (path: string) => void;
+  /** Establece si el panel de favoritos está expandido o colapsado. */
+  setFavoritesPanelExpanded: (expanded: boolean) => void;
 
   // ── Acciones de archivos ───────────────────────────────────────────────────
   /**
@@ -169,6 +201,10 @@ interface ExplorerStore {
   pinTab: (id: string) => void;
   /** Abre un archivo real en un tab (o lo activa si ya está abierto). */
   openFile: (node: FsNode) => Promise<void>;
+  /** Abre un archivo por ruta absoluta (p. ej. desde drag & drop externo). */
+  openFileByPath: (path: string) => Promise<void>;
+  /** Abre un archivo por ruta y posiciona el editor en la línea indicada (para adjuntos de tareas). */
+  openFileAtLine: (path: string, lineStart: number, lineEnd?: number) => Promise<void>;
   /** Crea un nuevo archivo en la ruta dada y lo abre. */
   createNewFile: (dirPath: string, name: string) => Promise<void>;
   /** Crea un nuevo directorio. */
@@ -293,6 +329,15 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
   redoStacks: {},
   tabBaselineContent: {},
   closedTabsStack: [],
+  favoriteFolders: [],
+  favoritesPanelExpanded: true,
+  languageOverrides: {},
+
+  setLanguageOverride: (tabId, lang) => {
+    set((state) => ({
+      languageOverrides: { ...state.languageOverrides, [tabId]: lang },
+    }));
+  },
 
   // ── Inicialización ────────────────────────────────────────────────────────
 
@@ -372,6 +417,11 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
     const closedTabsStack = session?.closedTabsStack?.length
       ? session.closedTabsStack.slice(-MAX_CLOSED_TABS)
       : [];
+    const favoriteFolders = session?.favoriteFolders?.length ? session.favoriteFolders : [];
+    const favoritesPanelExpanded = session?.favoritesPanelExpanded !== false;
+    const languageOverrides = session?.tempLanguageOverrides && Object.keys(session.tempLanguageOverrides).length > 0
+      ? session.tempLanguageOverrides
+      : {};
     set({
       tree,
       loadingTree: false,
@@ -380,6 +430,9 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
       mdViewModes,
       tabBaselineContent,
       closedTabsStack,
+      favoriteFolders,
+      favoritesPanelExpanded,
+      languageOverrides,
       initialized: true,
       initInProgress: false,
     });
@@ -430,6 +483,31 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
       tree: setChildrenInTree(state.tree, nodePath, undefined),
     }));
   },
+
+  addFavoriteFolder: (path) => {
+    let added = false;
+    set((state) => {
+      const normalized = path.replace(/\\/g, "/").replace(/\/$/, "") || path;
+      if (state.favoriteFolders.includes(normalized)) return state;
+      added = true;
+      return { favoriteFolders: [...state.favoriteFolders, normalized] };
+    });
+    if (added) useToastStore.getState().toast("Carpeta agregada a favoritos");
+  },
+
+  removeFavoriteFolder: (path) => {
+    let removed = false;
+    set((state) => {
+      const normalized = path.replace(/\\/g, "/").replace(/\/$/, "") || path;
+      const next = state.favoriteFolders.filter((p) => p !== normalized);
+      if (next.length === state.favoriteFolders.length) return state;
+      removed = true;
+      return { favoriteFolders: next };
+    });
+    if (removed) useToastStore.getState().toast("Carpeta quitada de favoritos");
+  },
+
+  setFavoritesPanelExpanded: (expanded) => set({ favoritesPanelExpanded: expanded }),
 
   // ── Archivos reales ───────────────────────────────────────────────────────
 
@@ -524,6 +602,27 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
         tabBaselineContent: { ...state.tabBaselineContent, [tab.id]: tab.content },
       }));
     }
+  },
+
+  openFileByPath: async (path) => {
+    const name = path.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? path;
+    const ext = getExt(name);
+    const n = (ext ?? "").toLowerCase();
+    if (isNonEditableExt(ext)) return;
+    if (!canOpenInCode(ext) && n !== "") return;
+    const node: FsNode = { path, name, isDir: false, ext };
+    await get().openFile(node);
+  },
+
+  openFileAtLine: async (path, lineStart, lineEnd) => {
+    await get().openFileByPath(path);
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("nanpad:open-file-at-line", {
+          detail: { path, lineStart, lineEnd: lineEnd ?? lineStart },
+        })
+      );
+    }, 200);
   },
 
   createNewFile: async (dirPath, name) => {
@@ -661,6 +760,7 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
       openTabs: state.openTabs.map((t) => (t.id === id ? { ...t, isDirty: false } : t)),
       tabBaselineContent: { ...state.tabBaselineContent, [id]: tab.content },
     }));
+    useToastStore.getState().toast("Archivo guardado");
   },
 
   setMdViewMode: (tabId, mode, splitRatio) => {
@@ -835,12 +935,17 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
       };
     });
     await get().reloadTree();
+    useToastStore.getState().toast("Archivo guardado");
   },
 
   saveTempWithDialog: async (tabId) => {
-    const tab = get().openTabs.find((t) => t.id === tabId);
+    const state = get();
+    const tab = state.openTabs.find((t) => t.id === tabId);
     if (!tab || !tab.isTemp) return;
-    const defaultName = tab.label.replace(/^#Temp\s+/, "nota") + ".txt";
+    const lang = state.languageOverrides[tabId] ?? detectLanguage(tab.ext);
+    const ext = languageToExt(lang);
+    const baseName = tab.label.replace(/^#Temp\s+/, "nota");
+    const defaultName = baseName.includes(".") ? baseName : `${baseName}.${ext}`;
     const diskPath = await saveFileDialog(defaultName);
     if (!diskPath) return;
     await get().saveTempAsDisk(tabId, diskPath);

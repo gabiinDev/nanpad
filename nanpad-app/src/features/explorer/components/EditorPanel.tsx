@@ -184,7 +184,7 @@ interface ToolbarProps {
 }
 
 function Toolbar({ tab, mode, setMode, onSave, language, onLanguageChange, onCopyAll, onCutAll, onPaste, onAttachToTask, onAttachFileToTask, isMarkdown: isMarkdownProp }: ToolbarProps) {
-  const isMarkdown = isMarkdownProp ?? (tab.ext === "md" || tab.ext === "mdx");
+  const isMarkdown = isMarkdownProp ?? (tab.ext === "md" || tab.ext === "mdx" || tab.ext === "mdc");
 
   return (
     <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
@@ -341,7 +341,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   const setLanguageOverride = useExplorerStore((s) => s.setLanguageOverride);
   const detectedLanguage = detectLanguage(tab.ext);
   const language = languageOverrides[tab.id] ?? detectedLanguage;
-  const isMarkdown = tab.ext === "md" || tab.ext === "mdx" || language === "markdown";
+  const isMarkdown = tab.ext === "md" || tab.ext === "mdx" || tab.ext === "mdc" || language === "markdown";
   const isMdReal = isMarkdown && !!tab.path;
 
   // Tabs .md reales: modo y ratio desde el store (persistidos). Temporales: estado local.
@@ -372,8 +372,10 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   );
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const previewContainerRef = useRef<HTMLDivElement | null>(null);
   /** Payload para el modal "Añadir a tarea" (selección actual). */
   const [attachModalPayload, setAttachModalPayload] = useState<AttachToTaskPayload | null>(null);
+  const [editorMounted, setEditorMounted] = useState(false);
 
   const handleLanguageChange = useCallback((lang: string) => {
     setLanguageOverride(tab.id, lang);
@@ -418,6 +420,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   // Al cambiar de tab (solo no-reales): resetear modo local y enfocar editor si aplica.
   // Solo resetea cuando cambia tab.id; no cuando isMarkdown cambia por selección de lenguaje.
   useEffect(() => {
+    setEditorMounted(false);
     if (!isMdReal && isMarkdown) setLocalMode("preview");
     if (mode !== "preview") {
       const t = setTimeout(() => editorRef.current?.focus(), 80);
@@ -486,6 +489,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
   const handleEditorMount = useCallback(
     (ed: editor.IStandaloneCodeEditor) => {
       editorRef.current = ed;
+      setEditorMounted(true);
       ed.focus();
 
       const m = monaco as unknown as { KeyMod: { CtrlCmd: number }; KeyCode: { KEY_Z: number; KEY_Y: number } };
@@ -667,6 +671,52 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     };
   }, [draggingSplit, draggingRatio, isMdReal, isMarkdown, setSplitRatioValue]);
 
+  // Sincronizar scroll editor ↔ preview en vista dividida (por ratio).
+  useEffect(() => {
+    if (mode !== "split" || !isMarkdown || !editorMounted) return;
+    const ed = editorRef.current;
+    const previewEl = previewContainerRef.current;
+    if (!ed || !previewEl) return;
+
+    let syncingFromEditor = false;
+    let syncingFromPreview = false;
+
+    const syncFromEditor = () => {
+      if (syncingFromPreview) return;
+      const scrollHeight = ed.getScrollHeight();
+      const dom = ed.getContainerDomNode();
+      const clientHeight = dom?.clientHeight ?? 0;
+      const maxEditor = Math.max(0, scrollHeight - clientHeight);
+      if (maxEditor <= 0) return;
+      syncingFromEditor = true;
+      const ratio = ed.getScrollTop() / maxEditor;
+      const maxPreview = Math.max(0, previewEl.scrollHeight - previewEl.clientHeight);
+      previewEl.scrollTop = ratio * maxPreview;
+      requestAnimationFrame(() => { syncingFromEditor = false; });
+    };
+
+    const syncFromPreview = () => {
+      if (syncingFromEditor) return;
+      const maxPreview = Math.max(0, previewEl.scrollHeight - previewEl.clientHeight);
+      if (maxPreview <= 0) return;
+      syncingFromPreview = true;
+      const ratio = previewEl.scrollTop / maxPreview;
+      const scrollHeight = ed.getScrollHeight();
+      const dom = ed.getContainerDomNode();
+      const clientHeight = dom?.clientHeight ?? 0;
+      const maxEditor = Math.max(0, scrollHeight - clientHeight);
+      ed.setScrollTop(ratio * maxEditor);
+      requestAnimationFrame(() => { syncingFromPreview = false; });
+    };
+
+    const dispose = ed.onDidScrollChange(syncFromEditor);
+    previewEl.addEventListener("scroll", syncFromPreview, { passive: true });
+    return () => {
+      dispose.dispose();
+      previewEl.removeEventListener("scroll", syncFromPreview);
+    };
+  }, [mode, isMarkdown, tab.id, editorMounted]);
+
   const editorFlex = mode === "split" ? effectiveSplitRatio : 1;
   const previewFlex = mode === "split" ? 1 - effectiveSplitRatio : 1;
 
@@ -712,6 +762,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
 
           {isMarkdown && (mode === "preview" || mode === "split") && (
             <div
+              ref={previewContainerRef}
               key={tab.id}
               className={`min-h-0 min-w-0 overflow-auto bg-[var(--color-surface)] px-5 py-5 md:px-7 ${mode === "split" ? "border-l border-[var(--color-border)]" : ""}`}
               style={{ flex: previewFlex }}

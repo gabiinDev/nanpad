@@ -23,6 +23,7 @@ import {
 } from "@/infrastructure/FsService.ts";
 import { useToastStore } from "@/store/useToastStore.ts";
 import { detectLanguage, languageToExt } from "@/features/explorer/utils/langDetect.ts";
+import { validateFileNameOrPath, validateSingleName } from "@/features/explorer/utils/validateFileName.ts";
 
 const ROOT_PATH_KEY = "nanpad_explorer_root";
 const MAX_PERSISTED_REAL_TABS = 30;
@@ -81,7 +82,7 @@ export function getSessionFromStore(
       ? activeTabId
       : (realTabIds[0] ?? null);
   const realSet = new Set(realTabIds);
-  const isMd = (ext?: string) => ext === "md" || ext === "mdx";
+  const isMd = (ext?: string) => ext === "md" || ext === "mdx" || ext === "mdc";
   const mdViewModesFiltered: Record<string, { mode: MdPanelMode; splitRatio: number }> = {};
   for (const [tabId, value] of Object.entries(mdViewModes)) {
     if (!realSet.has(tabId)) continue;
@@ -626,59 +627,115 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
   },
 
   createNewFile: async (dirPath, name) => {
-    const normalDir = dirPath.replace(/\\/g, "/").replace(/\/$/, "");
-    const filePath = `${normalDir}/${name}`;
-    await createFile(filePath);
-    await get().reloadTree();
-    const ext = getExt(name);
-    const tab: OpenTab = {
-      id: filePath,
-      label: name,
-      path: filePath,
-      content: "",
-      isTemp: false,
-      isDirty: false,
-      ext,
-      isPinned: true,
-    };
-    set((state) => ({
-      openTabs: [...state.openTabs, tab],
-      activeTabId: tab.id,
-      tabBaselineContent: { ...state.tabBaselineContent, [tab.id]: tab.content },
-    }));
+    const v = validateFileNameOrPath(name, false);
+    if (!v.valid) {
+      useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+      throw new Error(v.error);
+    }
+    try {
+      const normalDir = dirPath.replace(/\\/g, "/").replace(/\/$/, "");
+      const filePath = `${normalDir}/${name}`;
+      // Si el nombre contiene "/", crear la estructura de carpetas antes del archivo.
+      if (name.includes("/")) {
+        const dirPart = filePath.slice(0, filePath.lastIndexOf("/"));
+        await createDir(dirPart);
+      }
+      await createFile(filePath);
+      await get().reloadTree();
+      const ext = getExt(name);
+      const tab: OpenTab = {
+        id: filePath,
+        label: name,
+        path: filePath,
+        content: "",
+        isTemp: false,
+        isDirty: false,
+        ext,
+        isPinned: true,
+      };
+      set((state) => ({
+        openTabs: [...state.openTabs, tab],
+        activeTabId: tab.id,
+        tabBaselineContent: { ...state.tabBaselineContent, [tab.id]: tab.content },
+      }));
+      useToastStore.getState().toast("Archivo creado", "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al crear archivo";
+      useToastStore.getState().toast(msg, "danger");
+      throw e;
+    }
   },
 
   createNewDir: async (parentPath, name) => {
-    const normalParent = parentPath.replace(/\\/g, "/").replace(/\/$/, "");
-    await createDir(`${normalParent}/${name}`);
-    await get().reloadTree();
+    const v = validateFileNameOrPath(name, true);
+    if (!v.valid) {
+      useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+      throw new Error(v.error);
+    }
+    // Si la ruta termina en algo que parece archivo (ej. mi/carpeta/archivo.txt), crear carpetas + archivo.
+    const segments = name.split("/").filter(Boolean);
+    const lastSegment = segments[segments.length - 1] ?? "";
+    const looksLikeFile = segments.length > 0 && lastSegment.includes(".") && lastSegment !== "." && lastSegment !== "..";
+    if (looksLikeFile) {
+      await get().createNewFile(parentPath, name);
+      return;
+    }
+    try {
+      const normalParent = parentPath.replace(/\\/g, "/").replace(/\/$/, "");
+      await createDir(`${normalParent}/${name}`);
+      await get().reloadTree();
+      useToastStore.getState().toast("Carpeta creada", "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al crear carpeta";
+      useToastStore.getState().toast(msg, "danger");
+      throw e;
+    }
   },
 
   deleteNode: async (node) => {
-    await deleteEntry(node.path, node.isDir);
-    set((state) => {
-      const tabs = state.openTabs.filter((t) => t.path === null || !t.path.startsWith(node.path));
-      const active = tabs.find((t) => t.id === state.activeTabId) ? state.activeTabId : (tabs[0]?.id ?? null);
-      return { openTabs: tabs, activeTabId: active };
-    });
-    await get().reloadTree();
+    try {
+      await deleteEntry(node.path, node.isDir);
+      set((state) => {
+        const tabs = state.openTabs.filter((t) => t.path === null || !t.path.startsWith(node.path));
+        const active = tabs.find((t) => t.id === state.activeTabId) ? state.activeTabId : (tabs[0]?.id ?? null);
+        return { openTabs: tabs, activeTabId: active };
+      });
+      await get().reloadTree();
+      useToastStore.getState().toast(node.isDir ? "Carpeta eliminada" : "Archivo eliminado", "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al eliminar";
+      useToastStore.getState().toast(msg, "danger");
+      throw e;
+    }
   },
 
   renameNode: async (node, newName) => {
-    const sep = node.path.includes("/") ? "/" : "\\";
-    const dir = node.path.substring(0, node.path.lastIndexOf(sep));
-    const newPath = `${dir}${sep}${newName}`;
-    await renameEntry(node.path, newPath);
-    set((state) => ({
-      openTabs: state.openTabs.map((t) => {
-        if (t.path === node.path) {
-          return { ...t, id: newPath, path: newPath, label: newName, ext: getExt(newName) };
-        }
-        return t;
-      }),
-      activeTabId: state.activeTabId === node.path ? newPath : state.activeTabId,
-    }));
-    await get().reloadTree();
+    const v = validateSingleName(newName);
+    if (!v.valid) {
+      useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+      throw new Error(v.error);
+    }
+    try {
+      const sep = node.path.includes("/") ? "/" : "\\";
+      const dir = node.path.substring(0, node.path.lastIndexOf(sep));
+      const newPath = `${dir}${sep}${newName}`;
+      await renameEntry(node.path, newPath);
+      set((state) => ({
+        openTabs: state.openTabs.map((t) => {
+          if (t.path === node.path) {
+            return { ...t, id: newPath, path: newPath, label: newName, ext: getExt(newName) };
+          }
+          return t;
+        }),
+        activeTabId: state.activeTabId === node.path ? newPath : state.activeTabId,
+      }));
+      await get().reloadTree();
+      useToastStore.getState().toast(node.isDir ? "Carpeta renombrada" : "Archivo renombrado", "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al renombrar";
+      useToastStore.getState().toast(msg, "danger");
+      throw e;
+    }
   },
 
   // ── Tabs ──────────────────────────────────────────────────────────────────

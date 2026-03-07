@@ -55,6 +55,7 @@ const EXT_TO_ICON: Record<string, IconType> = {
   // Markdown (Si, coherente con el resto de Si)
   md: SiMarkdown,
   mdx: SiMarkdown,
+  mdc: SiMarkdown,
   // Config / data
   json: SiJson,
   jsonc: SiJson,

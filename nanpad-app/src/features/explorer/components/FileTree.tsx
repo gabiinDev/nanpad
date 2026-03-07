@@ -31,6 +31,8 @@ import {
 } from "@ui/icons/index.tsx";
 import { canOpenInCode, isPreviewableExt, isNonEditableExt } from "@ui/icons/fileIconByExt.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
+import { validateFileNameOrPath, validateSingleName } from "@features/explorer/utils/validateFileName.ts";
+import { useToastStore } from "@/store/useToastStore.ts";
 
 function canPreview(ext?: string): boolean {
   return isPreviewableExt(ext);
@@ -118,8 +120,15 @@ interface ConfirmDialogProps {
 
 /**
  * Modal de confirmación de dos opciones (Confirmar / Cancelar).
+ * Al abrir se hace foco en Cancelar para que el usuario pueda navegar con teclado y Enter no confirme por defecto.
  */
 function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel }: ConfirmDialogProps) {
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    cancelButtonRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -164,6 +173,8 @@ function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel
         </p>
         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
           <button
+            ref={cancelButtonRef}
+            type="button"
             onClick={onCancel}
             style={{
               padding: "7px 16px", borderRadius: "6px",
@@ -183,6 +194,7 @@ function ConfirmDialog({ message, confirmLabel = "Eliminar", onConfirm, onCancel
             Cancelar
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             style={{
               padding: "7px 16px", borderRadius: "6px",
@@ -227,6 +239,7 @@ function openWithMode(
 interface InlineInputProps {
   defaultValue?: string;
   depth: number;
+  placeholder?: string;
   onConfirm: (name: string) => void;
   onCancel: () => void;
 }
@@ -235,7 +248,7 @@ interface InlineInputProps {
  * Input inline que aparece en su posición exacta dentro del árbol.
  * Se selecciona el texto antes de la extensión para renombrado rápido.
  */
-function InlineInput({ defaultValue = "nuevo archivo.txt", depth, onConfirm, onCancel }: InlineInputProps) {
+function InlineInput({ defaultValue = "nuevo archivo.txt", depth, placeholder, onConfirm, onCancel }: InlineInputProps) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const indent = depth * 14;
@@ -269,6 +282,7 @@ function InlineInput({ defaultValue = "nuevo archivo.txt", depth, onConfirm, onC
       <input
         ref={handleMount}
         value={value}
+        placeholder={placeholder}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter" && value.trim()) onConfirm(value.trim());
@@ -332,22 +346,26 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
 
   const openable = !node.isDir && isFileOpenable(node.ext);
 
-  const handleClick = useCallback(() => {
-    if (node.isDir) {
-      if (isExpanded) collapseDir(node.path);
-      else {
-        setExpanding(true);
-        void expandDir(node.path).then(() => setExpanding(false));
+  const handleClick = useCallback(
+    (e?: React.MouseEvent) => {
+      if (e) (e.currentTarget as HTMLElement).focus();
+      if (node.isDir) {
+        if (isExpanded) collapseDir(node.path);
+        else {
+          setExpanding(true);
+          void expandDir(node.path).then(() => setExpanding(false));
+        }
+        return;
       }
-      return;
-    }
-    if (!openable) return;
-    // Single click en archivo: preview (con debounce para distinguir del doble click)
-    if (clickTimer.current) clearTimeout(clickTimer.current);
-    clickTimer.current = setTimeout(() => {
-      void previewFile(node);
-    }, 200);
-  }, [node, isExpanded, openable, previewFile, expandDir, collapseDir]);
+      if (!openable) return;
+      // Single click en archivo: preview (con debounce para distinguir del doble click)
+      if (clickTimer.current) clearTimeout(clickTimer.current);
+      clickTimer.current = setTimeout(() => {
+        void previewFile(node);
+      }, 200);
+    },
+    [node, isExpanded, openable, previewFile, expandDir, collapseDir]
+  );
 
   const handleDoubleClick = useCallback(() => {
     if (node.isDir || !openable) return;
@@ -385,7 +403,7 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
           onBlur={onBlur}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
-              handleClick();
+              handleClick(undefined);
               return;
             }
             if (e.key === "F2") {
@@ -399,7 +417,7 @@ function TreeNode({ node, depth, onContextMenu, inlineChild, onInlineConfirm, on
               return;
             }
           }}
-          onClick={handleClick}
+          onClick={(e) => handleClick(e as React.MouseEvent)}
           onDoubleClick={handleDoubleClick}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); onContextMenu(e, node); }}
           title={!node.isDir && !openable ? `${node.name} (no editable)` : isOpen && !isPinned ? `${node.name} (vista previa — doble click para fijar)` : node.path}
@@ -558,6 +576,7 @@ type InlineAction =
   | { type: "rename"; node: FsNode };
 
 interface DeleteConfirm { node: FsNode; }
+interface RenameConfirm { node: FsNode; newName: string; }
 
 /**
  * Árbol de archivos navegable con menú contextual completo.
@@ -568,6 +587,7 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
   const [inlineAction, setInlineAction] = useState<InlineAction | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm | null>(null);
+  const [renameConfirm, setRenameConfirm] = useState<RenameConfirm | null>(null);
   const [focusedPath, setFocusedPath] = useState<string | null>(null);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, node: FsNode) => {
@@ -657,15 +677,43 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
 
   const handleInlineConfirm = useCallback(async (name: string) => {
     if (!inlineAction) return;
+    if (inlineAction.type === "rename") {
+      const v = validateSingleName(name);
+      if (!v.valid) {
+        useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+        return;
+      }
+      setRenameConfirm({ node: inlineAction.node, newName: name });
+      setInlineAction(null);
+      return;
+    }
+    if (inlineAction.type === "new-file") {
+      const v = validateFileNameOrPath(name, false);
+      if (!v.valid) {
+        useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+        return;
+      }
+    } else if (inlineAction.type === "new-dir") {
+      const v = validateFileNameOrPath(name, true);
+      if (!v.valid) {
+        useToastStore.getState().toast(v.error ?? "Nombre no válido", "danger");
+        return;
+      }
+    }
     setInlineAction(null);
     if (inlineAction.type === "new-file") {
       await createNewFile(inlineAction.parentPath, name);
     } else if (inlineAction.type === "new-dir") {
       await createNewDir(inlineAction.parentPath, name);
-    } else if (inlineAction.type === "rename") {
-      await renameNode(inlineAction.node, name);
     }
-  }, [inlineAction, createNewFile, createNewDir, renameNode]);
+  }, [inlineAction, createNewFile, createNewDir]);
+
+  const handleRenameConfirm = useCallback(() => {
+    if (!renameConfirm) return;
+    const { node, newName } = renameConfirm;
+    setRenameConfirm(null);
+    void renameNode(node, newName);
+  }, [renameConfirm, renameNode]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-surface-2)]">
@@ -704,19 +752,47 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
         />
       )}
 
-      {/* Nombre de la carpeta raíz actual */}
+      {/* Nombre de la carpeta raíz actual + crear en raíz */}
       {rootPath && (
         <div
-          className="shrink-0 border-b border-[var(--color-border)] px-3 py-2"
+          className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--color-border)] px-3 py-2"
           title={rootPath}
         >
-          <span className="text-[0.75rem] font-medium text-[var(--color-text-secondary)]">
+          <span className="min-w-0 truncate text-[0.75rem] font-medium text-[var(--color-text-secondary)]">
             {rootPath.split(/[\\/]/).filter(Boolean).pop() ?? rootPath}
           </span>
+          <div className="flex shrink-0 gap-0.5">
+            <button
+              type="button"
+              title="Nuevo archivo en la raíz"
+              onClick={() => setInlineAction({ type: "new-file", parentPath: rootPath })}
+              className={iconBtnClass}
+            >
+              <IconFileNew size={12} />
+            </button>
+            <button
+              type="button"
+              title="Nueva carpeta en la raíz"
+              onClick={() => setInlineAction({ type: "new-dir", parentPath: rootPath })}
+              className={iconBtnClass}
+            >
+              <IconFolderNew size={12} />
+            </button>
+          </div>
         </div>
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto py-1">
+        {/* Input inline para nuevo archivo/carpeta en la raíz */}
+        {rootPath && inlineAction && inlineAction.type !== "rename" && inlineAction.parentPath === rootPath && (
+          <InlineInput
+            defaultValue={inlineAction.type === "new-dir" ? "nueva carpeta" : "nuevo archivo.txt"}
+            depth={0}
+            placeholder={inlineAction.type === "new-dir" ? "ej. nueva carpeta o ruta/subcarpeta" : "ej. archivo.txt o ruta/archivo.txt"}
+            onConfirm={(name) => void handleInlineConfirm(name)}
+            onCancel={() => setInlineAction(null)}
+          />
+        )}
         {loadingTree ? (
           <div className="flex justify-center py-5">
             <IconSpinner size={16} />
@@ -773,6 +849,16 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
             void deleteNode(node);
           }}
           onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {/* Modal de confirmación para renombrar */}
+      {renameConfirm && (
+        <ConfirmDialog
+          message={`¿Renombrar "${renameConfirm.node.name}" a "${renameConfirm.newName}"?`}
+          confirmLabel="Renombrar"
+          onConfirm={handleRenameConfirm}
+          onCancel={() => setRenameConfirm(null)}
         />
       )}
     </div>

@@ -32,6 +32,7 @@ const EXT_TO_LANG: Record<string, string> = {
   // Documentación
   md: "markdown",
   mdx: "markdown",
+  mdc: "markdown",
   rst: "restructuredtext",
   txt: "plaintext",
 

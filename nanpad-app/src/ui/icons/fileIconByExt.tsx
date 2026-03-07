@@ -21,7 +21,7 @@ type FileIconComponent = typeof IconFileText;
 
 // ── Conjuntos de extensiones (minúsculas) ─────────────────────────────────────
 
-const MARKDOWN_EXTS = new Set(["md", "mdx"]);
+const MARKDOWN_EXTS = new Set(["md", "mdx", "mdc"]);
 const IMAGE_EXTS = new Set([
   "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp", "avif", "tiff",
 ]);

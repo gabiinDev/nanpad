@@ -29,8 +29,10 @@ Todo corre en tu máquina: no hay sincronización en la nube ni dependencia de s
 | **Explorador** | Árbol de archivos/notas, pestañas, búsqueda, detección de idioma (Markdown, TypeScript, JSON, etc.). |
 | **Almacenamiento** | SQLite local, export/import JSON, backup manual. |
 | **UI** | Tema claro/oscuro, sidebar de navegación, diseño responsive. |
+| **Productividad** | Paleta de comandos (Ctrl+K), ayuda flotante, persistencia de sesión (pestañas del explorador, preferencias y vista por defecto de tareas en SQLite), undo/redo de tareas (últimas acciones). |
+| **Tareas avanzadas** | Adjuntar fragmentos de código a tareas, historial de cambios por tarea, vinculación explorador ↔ tarea. |
 
-La especificación completa y el plan por fases están en la carpeta **`.resources/`** (plan maestro, especificación técnica).
+La especificación completa y el plan por fases están en la carpeta **`.resources/`** (plan maestro, especificación técnica), cuando exista en el repo.
 
 ---
 
@@ -40,7 +42,8 @@ La especificación completa y el plan por fases están en la carpeta **`.resourc
 - **Frontend:** React 19, Zustand, Tailwind CSS, Monaco Editor, marked, Mermaid.
 - **Arquitectura:** Module-First; cada módulo expone UseCases y DTOs; Event Bus inyectado; Composition Root manual.
 - **Persistencia:** SQLite vía `@tauri-apps/plugin-sql`; migraciones versionadas.
-- **Monorepo:** paquete `@nanpad/core` (lógica de dominio/application) y `@nanpad/app` (UI Tauri + Vite).
+- **Monorepo:** paquete `@nanpad/core` (lógica de dominio, UseCases y repositorios SQLite para task, category, document, history, storage, MCP) y `@nanpad/app` (UI Tauri + Vite).
+- **Tests:** Vitest en core y app; tests unitarios e integración por módulo en `@nanpad/core`.
 
 ---
 
@@ -97,6 +100,7 @@ Abre en el navegador la URL que indique Vite (por ejemplo `http://localhost:1420
 | `pnpm test:app` | Solo tests de `@nanpad/app`. |
 | `pnpm typecheck` | Verificación de tipos en todo el monorepo. |
 | `pnpm lint` | Linter en todos los paquetes. |
+| `pnpm build:portable` | Build de core + app y ejecutable portable (sin instalador). |
 
 ### 4. Comandos dentro de `nanpad-app`
 
@@ -143,7 +147,7 @@ La primera vez que ejecutes `tauri build` puede tardar más porque compila Rust 
 ## Base de datos al iniciar
 
 - **Creación:** Sí. Si la base de datos no existe, se crea al iniciar la app. El adaptador usa la ruta por defecto `sqlite:nanpad.db` (en el directorio de datos de la aplicación, gestionado por Tauri).
-- **Migraciones:** Al arrancar, se ejecuta `runMigrations(db)` desde el Composition Root (`App.tsx`): se crea la tabla `schema_version` y se aplican las migraciones pendientes (p. ej. la 001 con el esquema inicial). Todo con `CREATE TABLE IF NOT EXISTS`, así que es seguro en la primera ejecución.
+- **Migraciones:** Al arrancar, se ejecuta `runMigrations(db)` desde el Composition Root (`App.tsx`): se crea la tabla `schema_version` y se aplican las migraciones definidas en `@nanpad/core` (001 a 009: esquema inicial, índices, tablas auxiliares, etc.). Es seguro en la primera ejecución.
 - **Seed:** En el proyecto **no hay seed** que rellene datos iniciales (categorías por defecto, tareas de ejemplo, etc.). La base queda vacía tras las migraciones. Si querés datos básicos al primer arranque, se puede añadir un paso opcional “seed” que se ejecute una sola vez (por ejemplo, si `schema_version` está recién creado o si no hay categorías).
 
 ### Dónde se guardan la DB y los temporales (modo desarrollo)
@@ -165,16 +169,23 @@ Para ver la ruta real en runtime: en la consola de DevTools ejecutá `(await imp
 NANPAD/
 ├── README.md                 # Este archivo
 ├── package.json              # Monorepo (pnpm workspaces)
-├── .resources/                # Plan maestro y especificación técnica
+├── AGENTS.md                 # Instrucciones para el agente de IA
+├── .resources/               # Plan maestro y especificación técnica (si existe)
 ├── packages/
-│   └── core/                 # @nanpad/core: dominio, UseCases, DTOs
+│   └── core/                 # @nanpad/core
+│       ├── src/
+│       │   ├── shared/       # Event Bus, tipos (id, Result)
+│       │   ├── infrastructure/  # DB (IDatabase, schema, migraciones)
+│       │   └── modules/      # task, category, document, history, storage, mcp
+│       └── package.json
 └── nanpad-app/               # @nanpad/app: UI Tauri + React + Vite
     ├── src/
-    │   ├── app/              # Shell, rutas, navegación
-    │   ├── features/         # Explorer, tareas, documentos
+    │   ├── app/              # Shell, router, Composition Root, tema
+    │   ├── features/         # home, tasks, explorer, documents, settings, command-palette, help
+    │   ├── store/            # Zustand (tareas, categorías, explorador, etc.)
     │   ├── ui/               # Componentes reutilizables
-    │   └── ...
-    └── src-tauri/            # Tauri (Rust): ventana, plugins (SQL, FS, etc.)
+    │   └── infrastructure/   # SqliteAdapter, FsService, persistencia sesión/preferencias
+    └── src-tauri/            # Tauri (Rust): ventana, plugins (SQL, FS, dialog, etc.)
 ```
 
-Para más detalle sobre la estructura de la app y la arquitectura Module-First, ver `nanpad-app/README.md` y `.resources/PLAN-MAESTRO-NANPAD.md`.
+Para más detalle sobre la estructura de la app, el estado por fases y la arquitectura Module-First, ver **`nanpad-app/README.md`**. La especificación y el plan maestro se referencian en `.cursor/rules/` y, si existe, en `.resources/`.

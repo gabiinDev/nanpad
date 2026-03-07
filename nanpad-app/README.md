@@ -1,4 +1,4 @@
-# NANPAD
+# NANPAD — App
 
 **Aplicación local de gestión de tareas + documentación técnica**  
 Arquitectura Module-First · Tauri 2 · React 19 · TypeScript strict · SQLite
@@ -16,79 +16,105 @@ Arquitectura Module-First · Tauri 2 · React 19 · TypeScript strict · SQLite
 | Editor | Monaco Editor |
 | Markdown | marked + mermaid |
 | Virtualización | @tanstack/react-virtual |
-| Persistencia | SQLite via @tauri-apps/plugin-sql |
+| Persistencia | SQLite vía @tauri-apps/plugin-sql |
 | Tests | Vitest 4 |
 
 ---
 
 ## Cómo ejecutar
 
+Desde la **raíz del monorepo** (recomendado):
+
 ```bash
-# Instalar dependencias
-npm install
+pnpm install
+pnpm dev          # Abre la ventana Tauri + Vite
+pnpm test         # Tests de todos los paquetes
+pnpm test:app     # Solo tests de esta app
+pnpm typecheck    # Verificación de tipos
+pnpm lint         # ESLint
+```
 
-# Desarrollo (abre la ventana de Tauri)
-npm run tauri dev
+Desde **dentro de `nanpad-app`**:
 
-# Ejecutar tests
-npm test
-
-# Tests en modo watch
-npm run test:watch
-
-# Verificar tipos
-npm run typecheck
-
-# Build de producción
-npm run tauri build
+```bash
+pnpm install      # o npm install (workspace ya instalado desde raíz)
+pnpm dev          # Solo frontend en navegador (Vite)
+pnpm tauri dev    # App Tauri + Vite
+pnpm build        # tsc + vite build
+pnpm tauri build  # Instalador / ejecutable
+pnpm test         # Vitest
+pnpm test:watch   # Vitest en modo watch
+pnpm test:ui      # Vitest con UI
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # ESLint
 ```
 
 ---
 
-## Estructura del proyecto
+## Estructura del proyecto (nanpad-app)
+
+La lógica de dominio (módulos task, category, document, history, storage, mcp) y el Event Bus viven en **`@nanpad/core`** (`packages/core`). Esta app solo contiene la capa de presentación y la infraestructura de conexión a Tauri.
 
 ```
-nanpad/
+nanpad-app/
 ├── src/
 │   ├── main.tsx               # Punto de entrada React
-│   ├── App.tsx                # Componente raíz + inicialización DB
+│   ├── App.tsx                # Raíz: abre DB, migraciones, Composition Root, Shell
 │   ├── App.css                # Tailwind + variables de tema (claro/oscuro)
 │   │
-│   ├── shared/                # Shared Kernel (mínimo)
-│   │   ├── event-bus/         # Event Bus tipado e inyectable
-│   │   └── types/             # UUID, Result, tipos base
+│   ├── app/                   # Shell y orquestación
+│   │   ├── Shell.tsx          # Layout (sidebar, rutas, paleta de comandos, toasts)
+│   │   ├── router.ts          # Rutas: home | tasks | documents | settings
+│   │   ├── composition.ts     # Composition Root (EventBus, repos, UseCases)
+│   │   ├── AppContext.tsx     # Provider de UseCases
+│   │   └── useTheme.ts        # Tema claro/oscuro
 │   │
-│   ├── modules/               # Módulos de dominio (Module-First)
-│   │   ├── task/              # Gestión de tareas
-│   │   ├── category/          # Categorías
-│   │   ├── document/          # Documentos Markdown
-│   │   ├── history/           # Historial de cambios
-│   │   ├── storage/           # Export/Import/Backup
-│   │   └── mcp/               # Integración MCP (agentes IA)
+│   ├── features/              # Pantallas y flujos por dominio
+│   │   ├── home/              # HomePage (resumen)
+│   │   ├── tasks/             # TasksPage: Kanban, lista, formulario, historial, categorías
+│   │   ├── explorer/          # ExplorerPage: árbol de archivos, pestañas, editor, búsqueda
+│   │   ├── documents/         # DocumentEditor, MarkdownPreview (split view)
+│   │   ├── settings/          # Ajustes: tema, categorías, export/import/backup
+│   │   ├── command-palette/   # Paleta de comandos (Ctrl+K)
+│   │   └── help/              # HelpFloating (ayuda contextual)
 │   │
-│   ├── ui/                    # Componentes presentacionales reutilizables
-│   ├── features/              # Composables por pantalla
-│   ├── app/                   # Shell (rutas, providers)
-│   └── infrastructure/        # DB (SQLite), FS
-│       ├── db/
-│       │   ├── migrations/    # SQL de migraciones
-│       │   ├── schema.ts      # Tipos de filas SQLite
-│       │   └── index.ts       # Cliente DB + migraciones
-│       └── fs/
+│   ├── store/                 # Estado global (Zustand)
+│   │   ├── useTaskStore.ts
+│   │   ├── useCategoryStore.ts
+│   │   ├── useDocumentStore.ts
+│   │   ├── useExplorerStore.ts
+│   │   ├── useRouteStore.ts
+│   │   ├── useAppSettingsStore.ts
+│   │   ├── useCommandPaletteStore.ts
+│   │   ├── useToastStore.ts
+│   │   └── ...
+│   │
+│   ├── ui/                    # Componentes reutilizables
+│   │   ├── components/        # Badge, Spinner, Toast, ContextMenu, etc.
+│   │   └── icons/
+│   │
+│   └── infrastructure/        # Adaptadores y persistencia local
+│       ├── SqliteAdapter.ts   # Apertura de SQLite (Tauri)
+│       ├── SqliteStorageAdapter.ts  # Puerto de almacenamiento para Storage UseCases
+│       ├── FsService.ts       # Lectura/escritura de archivos (explorador)
+│       ├── appSettingsPersistence.ts
+│       ├── explorerSessionPersistence.ts
+│       └── taskUndoPersistence.ts
 │
-└── src-tauri/                 # Tauri/Rust (mínimo: solo plugins)
+└── src-tauri/                 # Tauri (Rust): ventana, plugins SQL, FS, dialog, opener
 ```
 
 ---
 
 ## Arquitectura
 
-- **Module-First**: cada módulo es una mini-aplicación interna con su propio `application/index.ts` público.
-- **Sin singletons globales**: Event Bus, repositorios y UseCases se instancian en el Composition Root.
-- **DTOs** como único contrato entre módulos.
-- **TypeScript strict**: `noImplicitAny`, `strictNullChecks`, `noUnusedLocals`.
+- **Module-First**: los módulos de dominio están en `@nanpad/core`; cada uno expone UseCases y DTOs desde su `application/index.ts`.
+- **Composition Root** en `app/composition.ts`: se instancian Event Bus, repositorios y UseCases una sola vez al abrir la DB.
+- **Sin singletons globales**: todo se inyecta vía `AppContext` (UseCases) y stores Zustand (estado UI).
+- **DTOs** como único contrato entre core y app.
+- **TypeScript strict** en todo el monorepo.
 
-Consulta `.resources/PLAN-MAESTRO-NANPAD.md` para el plan completo de fases.
+Para el plan de fases y la especificación técnica, ver la carpeta **`.resources/`** (si existe) o las reglas en **`.cursor/rules/`**.
 
 ---
 
@@ -98,12 +124,14 @@ Consulta `.resources/PLAN-MAESTRO-NANPAD.md` para el plan completo de fases.
 |------|-------------|--------|
 | 0 | Entorno: Tauri + Vite + TS + dependencias | ✅ |
 | 1 | Shared Kernel + SQLite + Event Bus | ✅ |
-| 2 | Módulo Task | 🔜 |
-| 3 | Módulo Category | 🔜 |
-| 4 | Módulo History | 🔜 |
-| 5 | Módulo Document | 🔜 |
-| 6 | Módulo Storage | 🔜 |
-| 7 | Módulo MCP | 🔜 |
-| 8 | Composition Root + Shell UI | 🔜 |
-| 9 | Features UI (Kanban, Lista, Editor) | 🔜 |
-| 10 | Refinamiento y cierre | 🔜 |
+| 2 | Módulo Task (CRUD, subtareas, código adjunto, historial) | ✅ |
+| 3 | Módulo Category | ✅ |
+| 4 | Módulo History (RecordChange, GetEntityHistory) | ✅ |
+| 5 | Módulo Document | ✅ |
+| 6 | Módulo Storage (Export, Import, Backup) | ✅ |
+| 7 | Módulo MCP (McpServer, registro de herramientas) | ✅ |
+| 8 | Composition Root + Shell UI (rutas, tema, paleta, toasts) | ✅ |
+| 9 | Features UI (Kanban, lista, explorador, editor, ajustes) | ✅ |
+| 10 | Refinamiento (persistencia sesión, preferencias, undo tareas) | ✅ |
+
+Funcionalidades actuales: tareas con categorías, prioridades, etiquetas, subtareas y fragmentos de código; vistas Kanban y lista; explorador de archivos con pestañas y editor; documentos Markdown con vista previa y Mermaid; export/import/backup desde Ajustes; paleta de comandos (Ctrl+K); tema claro/oscuro; historial por tarea; persistencia de pestañas y preferencias en SQLite.

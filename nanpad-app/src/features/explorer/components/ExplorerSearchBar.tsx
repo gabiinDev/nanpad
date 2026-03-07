@@ -4,12 +4,13 @@
  * Sin texto + click → dropdown con árbol navegable. La ruta que se navega aquí
  * es local (browseRootPath) y no cambia la raíz del explorador; solo al hacer
  * doble click en una carpeta ("ir a carpeta") se actualiza la raíz del explorador.
- * Arriba del árbol se muestra un "árbol inverso" con hasta 4 carpetas padre para
- * saltar a un nivel superior sin sincronizar con el explorador.
+ * Arriba del árbol: "Carpetas anteriores" (hasta 4 padres). Clic = ver contenido
+ * en el desplegable; doble clic = abrir esa carpeta en el árbol del explorador.
  *
- * Con texto → búsqueda recursiva con debounce en la raíz del explorador (rootPath).
+ * Con texto → búsqueda recursiva con debounce en la raíz (rootPath). En cada nivel
+ * se buscan subdirectorios en paralelo (Promise.all) para mejor rendimiento.
  *
- * Rendimiento: debounce 350ms, máximo MAX_RESULTS, profundidad MAX_DEPTH,
+ * Rendimiento: debounce DEBOUNCE_MS, máximo MAX_RESULTS, profundidad MAX_DEPTH,
  * scroll al inicio al cambiar resultados.
  */
 
@@ -31,7 +32,7 @@ import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
-const DEBOUNCE_MS = 100;
+const DEBOUNCE_MS = 200;
 const MAX_RESULTS = 40;
 const MAX_DEPTH = 4;
 
@@ -63,17 +64,41 @@ interface SearchTreeNode {
   matches: FsNode[];
 }
 
+// ── Búsqueda por extensión vs por nombre ───────────────────────────────────────
+
+/** Si el texto es un patrón de extensión (*.md, .ts, .tsx), devuelve la ext en minúsculas; si no, null. */
+function parseExtensionPattern(query: string): string | null {
+  const trimmed = query.trim().toLowerCase();
+  const m = /^\*?\.?([a-z0-9]+)$/.exec(trimmed);
+  return m ? m[1] : null;
+}
+
+/**
+ * Indica si un nodo coincide con la búsqueda: por nombre (substring) o por extensión (*.ext / .ext).
+ */
+function entryMatches(entry: FsNode, query: string, extToFind: string | null): boolean {
+  if (entry.isDir) {
+    return extToFind === null && entry.name.toLowerCase().includes(query);
+  }
+  if (extToFind !== null) {
+    return (entry.ext ?? "").toLowerCase() === extToFind;
+  }
+  return entry.name.toLowerCase().includes(query);
+}
+
 // ── Búsqueda recursiva → árbol agrupado ───────────────────────────────────────
 
 /**
  * Recorre el FS y agrupa los resultados por directorio padre.
  * Devuelve un array de SearchTreeNode (directorio → hijos coincidentes).
- * Un directorio que coincide en nombre se incluye también como match.
+ * En cada nivel se buscan los subdirectorios en paralelo para mejorar rendimiento.
+ * Si query es un patrón de extensión (*.md, .ts, etc.), se filtra por extensión; si no, por nombre.
  */
 async function searchIntoTree(
   dirPath: string,
   dirNode: FsNode,
   query: string,
+  extToFind: string | null,
   depth: number,
   cancelled: { current: boolean },
   totalFound: { count: number }
@@ -88,32 +113,33 @@ async function searchIntoTree(
   }
 
   const directMatches: FsNode[] = [];
-  const subGroups: SearchTreeNode[] = [];
+  const subDirs: FsNode[] = [];
 
   for (const entry of entries) {
     if (cancelled.current || totalFound.count >= MAX_RESULTS) break;
-
-    if (entry.name.toLowerCase().includes(query)) {
+    if (entryMatches(entry, query, extToFind)) {
       directMatches.push(entry);
       totalFound.count++;
     }
-
-    // Aunque el dir no coincida en nombre, seguimos buscando dentro
-    if (entry.isDir && depth < MAX_DEPTH) {
-      const sub = await searchIntoTree(entry.path, entry, query, depth + 1, cancelled, totalFound);
-      subGroups.push(...sub);
-    }
+    if (entry.isDir && depth < MAX_DEPTH) subDirs.push(entry);
   }
 
   const result: SearchTreeNode[] = [];
 
-  // Grupo de este directorio solo si tiene coincidencias directas
   if (directMatches.length > 0) {
     result.push({ dir: dirNode, matches: directMatches });
   }
 
-  // Subgrupos de subdirectorios
-  result.push(...subGroups);
+  if (subDirs.length === 0) return result;
+
+  const subPromises = subDirs.map((entry) =>
+    searchIntoTree(entry.path, entry, query, extToFind, depth + 1, cancelled, totalFound)
+  );
+  const subResults = await Promise.all(subPromises);
+  for (const sub of subResults) {
+    if (cancelled.current || totalFound.count >= MAX_RESULTS) break;
+    result.push(...sub);
+  }
 
   return result;
 }
@@ -416,10 +442,12 @@ export function ExplorerSearchBar() {
     setSearching(true);
 
     debounceTimer.current = setTimeout(async () => {
+      const normalizedQuery = query.toLowerCase().trim();
+      const extToFind = parseExtensionPattern(normalizedQuery);
       const rootNode: FsNode = { name: rootPath.split(/[\\/]/).pop() ?? rootPath, path: rootPath, isDir: true };
       const totalFound = { count: 0 };
       const groups = await searchIntoTree(
-        rootPath, rootNode, query.toLowerCase().trim(), 0, newCancelled, totalFound
+        rootPath, rootNode, normalizedQuery, extToFind, 0, newCancelled, totalFound
       );
       if (!newCancelled.current) {
         setSearchGroups(groups);
@@ -488,10 +516,18 @@ export function ExplorerSearchBar() {
     }
   }, []);
 
-  /** Ir a una carpeta padre en el dropdown (solo cambia browseRootPath; no toca el explorador). */
+  /** Un click: ver contenido de la carpeta en el desplegable. No cambia la raíz del explorador. */
   const handleGoToAncestor = useCallback((path: string) => {
     setBrowseRootPath(path);
   }, []);
+
+  /** Doble click en carpeta anterior: abrir en el árbol del explorador y cerrar el dropdown. */
+  const handleOpenAncestorInExplorer = useCallback((path: string) => {
+    void setRoot(path);
+    setBrowseRootPath(path);
+    setOpen(false);
+    setQuery("");
+  }, [setRoot]);
 
   // ── Derivados ────────────────────────────────────────────────────────────
 
@@ -536,7 +572,7 @@ export function ExplorerSearchBar() {
           ref={inputRef}
           type="text"
           value={query}
-          placeholder={`Buscar en ${rootName}…`}
+          placeholder={`Buscar en ${rootName}… (ej. *.md, *.ts)`}
           onChange={handleChange}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
@@ -652,11 +688,14 @@ export function ExplorerSearchBar() {
               </div>
             )}
 
-            {/* Filas de carpetas padre (solo visibles al desplegar) */}
+            {/* Filas de carpetas padre (solo visibles al desplegar). Click = ver aquí; doble click = abrir en explorador. */}
             {!isSearchMode && ancestorPaths.length > 0 && ancestorsExpanded && (
               <div style={{ padding: "4px 0 2px" }}>
                 <div style={{ fontSize: "10px", color: "var(--color-text-muted)", padding: "2px 10px 4px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                   Carpetas anteriores
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)", padding: "0 10px 4px", opacity: 0.85 }}>
+                  Clic: ver aquí · Doble clic: abrir en el explorador
                 </div>
                 {ancestorPaths.map((anc) => (
                   <div
@@ -664,6 +703,7 @@ export function ExplorerSearchBar() {
                     role="button"
                     tabIndex={-1}
                     onClick={() => handleGoToAncestor(anc.path)}
+                    onDoubleClick={() => handleOpenAncestorInExplorer(anc.path)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -682,7 +722,7 @@ export function ExplorerSearchBar() {
                       (e.currentTarget as HTMLElement).style.background = "transparent";
                       (e.currentTarget as HTMLElement).style.color = "var(--color-text-secondary)";
                     }}
-                    title={anc.path}
+                    title={`${anc.path}\nDoble clic: abrir en el explorador`}
                   >
                     <span style={{ color: "var(--color-priority-high)", flexShrink: 0 }}>
                       <IconFolder size={12} />

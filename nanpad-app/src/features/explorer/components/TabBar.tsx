@@ -205,14 +205,13 @@ interface TabProps {
   index: number;
   isActive: boolean;
   isDragging?: boolean;
-  isDropTarget?: boolean;
   onActivate: () => void;
   onClose: () => void;
   onSaveToDisk: () => void;
   onDragStart: (index: number) => void;
-  onDragOver: (index: number) => void;
+  onDragOver: (index: number, insertIndex: number) => void;
   onDragLeave: () => void;
-  onDrop: (toIndex: number) => void;
+  onDrop: (insertIndex: number) => void;
   onDragEnd: () => void;
   maxWidth: number;
 }
@@ -230,7 +229,6 @@ function Tab({
   index,
   isActive,
   isDragging,
-  isDropTarget,
   onActivate,
   onClose,
   onSaveToDisk,
@@ -241,23 +239,38 @@ function Tab({
   onDragEnd,
   maxWidth,
 }: TabProps) {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mid = rect.left + rect.width / 2;
+    const insertIndex = e.clientX < mid ? index : index + 1;
+    onDragOver(index, insertIndex);
+  };
   return (
     <div
       role="tab"
       draggable
       onDragStart={(e) => { e.dataTransfer.setData("text/plain", String(index)); e.dataTransfer.effectAllowed = "move"; onDragStart(index); }}
-      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver(index); }}
+      onDragOver={handleDragOver}
       onDragLeave={onDragLeave}
-      onDrop={(e) => { e.preventDefault(); onDrop(index); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const mid = rect.left + rect.width / 2;
+        const insertIndex = e.clientX < mid ? index : index + 1;
+        onDrop(insertIndex);
+      }}
       onDragEnd={onDragEnd}
-      className={`flex h-full min-w-[3.75rem] shrink-0 items-center gap-1.5 border-r border-[var(--color-border)] pl-2.5 pr-1 transition-all duration-150 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      className={`flex h-full min-w-[3.75rem] shrink-0 select-none items-center gap-1.5 border-r border-[var(--color-border)] pl-2.5 pr-1 transition-all duration-150 ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       style={{
         maxWidth: `${maxWidth}px`,
         background: isActive ? "var(--color-surface)" : "transparent",
         borderBottom: isActive ? "2px solid var(--color-accent)" : "2px solid transparent",
         color: isActive ? "var(--color-text-primary)" : "var(--color-text-muted)",
         opacity: isDragging ? 0.5 : 1,
-        boxShadow: isDropTarget ? "inset 0 0 0 2px var(--color-accent)" : undefined,
+        userSelect: "none",
+        WebkitUserSelect: "none",
       }}
       onClick={onActivate}
       onMouseDown={(e) => { if (e.button === 1) e.preventDefault(); }}
@@ -310,6 +323,44 @@ function Tab({
   );
 }
 
+// ── Ranura de drop entre tabs (indicator + espacio animado) ───────────────────
+
+interface DropSlotProps {
+  insertIndex: number;
+  isActive: boolean;
+  onDragOver: () => void;
+  onDragLeave: () => void;
+  onDrop: () => void;
+}
+
+function DropSlot({ isActive, onDragOver, onDragLeave, onDrop }: DropSlotProps) {
+  return (
+    <div
+      role="presentation"
+      className="flex h-full shrink-0 items-center justify-center transition-all duration-150 ease-out"
+      style={{
+        width: isActive ? 16 : 4,
+        minWidth: isActive ? 16 : 4,
+      }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; e.stopPropagation(); onDragOver(); }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDrop(); }}
+    >
+      {isActive && (
+        <div
+          style={{
+            width: 2,
+            height: "60%",
+            borderRadius: 1,
+            background: "var(--color-accent)",
+            boxShadow: "0 0 6px var(--color-accent-subtle)",
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ── TabBar ────────────────────────────────────────────────────────────────────
 
 interface TabBarProps {
@@ -326,7 +377,8 @@ export function TabBar({ onCloseTab }: TabBarProps) {
 
   const [pendingClose, setPendingClose] = useState<OpenTab | null>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
-  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+  /** Índice antes del cual se insertará el tab (0..openTabs.length). null = sin indicador. */
+  const [dropInsertIndex, setDropInsertIndex] = useState<number | null>(null);
   const justReorderedRef = useRef(false);
 
   // Al cambiar el tab activo (p. ej. abrir un archivo nuevo), hacer scroll para que el tab sea visible
@@ -406,14 +458,27 @@ export function TabBar({ onCloseTab }: TabBarProps) {
     await saveTempAsDisk(tab.id, diskPath);
   }, [saveTempAsDisk, languageOverrides]);
 
-  const handleDrop = useCallback((toIndex: number) => {
+  const handleDrop = useCallback((insertIndex: number) => {
     if (draggingIndex === null) return;
-    reorderTabs(draggingIndex, toIndex);
+    if (insertIndex === draggingIndex || insertIndex === draggingIndex + 1) return;
+    reorderTabs(draggingIndex, insertIndex);
     setDraggingIndex(null);
-    setDropTargetIndex(null);
+    setDropInsertIndex(null);
     justReorderedRef.current = true;
     setTimeout(() => { justReorderedRef.current = false; }, 150);
   }, [draggingIndex, reorderTabs]);
+
+  const handleDragOverSlot = useCallback((insertIndex: number) => {
+    if (draggingIndex === null) return;
+    if (insertIndex === draggingIndex || insertIndex === draggingIndex + 1) return;
+    setDropInsertIndex(insertIndex);
+  }, [draggingIndex]);
+
+  const handleDragOverTab = useCallback((_tabIndex: number, insertIndex: number) => {
+    if (draggingIndex === null) return;
+    if (insertIndex === draggingIndex || insertIndex === draggingIndex + 1) return;
+    setDropInsertIndex(insertIndex);
+  }, [draggingIndex]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -456,29 +521,43 @@ export function TabBar({ onCloseTab }: TabBarProps) {
           className="flex h-9 shrink-0 items-stretch overflow-x-auto overflow-y-hidden border-b border-[var(--color-border)] bg-[var(--color-surface-2)]"
         >
           {openTabs.map((tab, index) => (
-            <div key={tab.id} data-tab-id={tab.id} className="shrink-0" style={{ maxWidth: getTabMaxWidth(openTabs.length) }}>
-              <Tab
-                tab={tab}
-                index={index}
-                isActive={tab.id === activeTabId}
-                isDragging={draggingIndex === index}
-                isDropTarget={dropTargetIndex === index}
-                onActivate={() => {
-                  if (justReorderedRef.current) return;
-                  setActiveTab(tab.id);
-                }}
-                onClose={() => requestClose(tab)}
-                onSaveToDisk={() => void handleSaveToDisk(tab)}
-                onDragStart={(i) => setDraggingIndex(i)}
-                onDragOver={(i) => setDropTargetIndex(i)}
-                onDragLeave={() => setDropTargetIndex(null)}
-                onDrop={handleDrop}
-                onDragEnd={() => { setDraggingIndex(null); setDropTargetIndex(null); }}
-                maxWidth={getTabMaxWidth(openTabs.length)}
+            <div key={`slot-${index}`} className="shrink-0 flex items-stretch">
+              <DropSlot
+                insertIndex={index}
+                isActive={dropInsertIndex === index}
+                onDragOver={() => handleDragOverSlot(index)}
+                onDragLeave={() => setDropInsertIndex(null)}
+                onDrop={() => handleDrop(index)}
               />
+              <div data-tab-id={tab.id} className="shrink-0" style={{ maxWidth: getTabMaxWidth(openTabs.length) }}>
+                <Tab
+                  tab={tab}
+                  index={index}
+                  isActive={tab.id === activeTabId}
+                  isDragging={draggingIndex === index}
+                  onActivate={() => {
+                    if (justReorderedRef.current) return;
+                    setActiveTab(tab.id);
+                  }}
+                  onClose={() => requestClose(tab)}
+                  onSaveToDisk={() => void handleSaveToDisk(tab)}
+                  onDragStart={(i) => setDraggingIndex(i)}
+                  onDragOver={handleDragOverTab}
+                  onDragLeave={() => setDropInsertIndex(null)}
+                  onDrop={handleDrop}
+                  onDragEnd={() => { setDraggingIndex(null); setDropInsertIndex(null); }}
+                  maxWidth={getTabMaxWidth(openTabs.length)}
+                />
+              </div>
             </div>
           ))}
-
+          <DropSlot
+            insertIndex={openTabs.length}
+            isActive={dropInsertIndex === openTabs.length}
+            onDragOver={() => handleDragOverSlot(openTabs.length)}
+            onDragLeave={() => setDropInsertIndex(null)}
+            onDrop={() => handleDrop(openTabs.length)}
+          />
           <button
             type="button"
             onClick={() => void createTempTab()}

@@ -1,0 +1,13 @@
+{
+  "name": "nanpad-mcp-adapter",
+  "version": "0.1.0",
+  "description": "Adaptador stdio MCP que reenvía a NANPAD (HTTP). Para usar con Cursor o VS Code.",
+  "type": "module",
+  "main": "index.mjs",
+  "bin": {
+    "nanpad-mcp-adapter": "index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

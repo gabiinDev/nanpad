@@ -22,6 +22,8 @@ describe("GetAppSettings", () => {
     expect(result.high_performance).toBe(false);
     expect(result.default_task_view).toBe("kanban");
     expect(result.show_help_icon).toBe(true);
+    expect(result.mcp_enabled).toBe(false);
+    expect(result.mcp_port).toBe(4242);
   });
 
   it("retorna valores guardados cuando existen", async () => {

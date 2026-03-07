@@ -108,7 +108,7 @@ export interface AppUseCases {
   saveTaskUndoSession: (session: TaskUndoSession) => Promise<void>;
   // Preferencias de app (tema, ayuda, vista por defecto tareas) — UseCases del módulo Settings
   loadAppSettings: () => Promise<AppSettingsDTO>;
-  saveAppSetting: (key: AppSettingsKey, value: string | boolean) => Promise<void>;
+  saveAppSetting: (key: AppSettingsKey, value: string | boolean | number) => Promise<void>;
   /** Event Bus para suscripciones desde la UI (p. ej. refrescar lista al crear/actualizar tarea). */
   eventBus: IEventBus;
 }
@@ -185,7 +185,7 @@ export function buildComposition(db: IDatabase): AppUseCases {
   const getAppSettings = new GetAppSettings(appSettingsRepository);
   const saveAppSettingUseCase = new SaveAppSetting(appSettingsRepository);
   const loadAppSettings = (): Promise<AppSettingsDTO> => getAppSettings.execute();
-  const saveAppSetting = (key: AppSettingsKey, value: string | boolean): Promise<void> =>
+  const saveAppSetting = (key: AppSettingsKey, value: string | boolean | number): Promise<void> =>
     saveAppSettingUseCase.execute({ key, value });
 
   // ─── Event Bus (expuesto para suscripciones desde la UI) ───────────────────────
@@ -198,10 +198,17 @@ export function buildComposition(db: IDatabase): AppUseCases {
     listTasks,
     moveTaskStatus,
     updateTask,
-    createDocument,
-    getDocument,
-    listDocuments,
+    restoreTask,
+    addSubtask,
+    updateSubtask,
+    deleteSubtask,
+    attachCodeToTask,
+    listCodeSnippetsForTask,
+    deleteCodeSnippet,
     listCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory,
   });
 
   return {

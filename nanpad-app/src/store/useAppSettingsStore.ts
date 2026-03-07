@@ -31,6 +31,8 @@ interface AppSettingsStore extends AppSettingsDTO {
   setHighPerf: (uc: AppUseCases, value: boolean) => Promise<void>;
   setDefaultTaskView: (uc: AppUseCases, view: "list" | "kanban") => Promise<void>;
   setShowHelpIcon: (uc: AppUseCases, value: boolean) => Promise<void>;
+  setMcpEnabled: (uc: AppUseCases, value: boolean) => Promise<void>;
+  setMcpPort: (uc: AppUseCases, port: number) => Promise<void>;
 }
 
 export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
@@ -68,5 +70,44 @@ export const useAppSettingsStore = create<AppSettingsStore>((set, get) => ({
   setShowHelpIcon: async (uc, value) => {
     set({ show_help_icon: value });
     await uc.saveAppSetting("show_help_icon", value);
+  },
+
+  setMcpEnabled: async (uc, value) => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    set({ mcp_enabled: value });
+    await uc.saveAppSetting("mcp_enabled", value);
+    if (value) {
+      const port = get().mcp_port;
+      try {
+        await invoke("start_mcp_server", { port });
+      } catch {
+        set({ mcp_enabled: false });
+        await uc.saveAppSetting("mcp_enabled", false);
+        throw new Error("No se pudo iniciar el servidor MCP (¿puerto en uso?)");
+      }
+    } else {
+      try {
+        await invoke("stop_mcp_server");
+      } catch {
+        // Ignorar si ya estaba parado
+      }
+    }
+  },
+
+  setMcpPort: async (uc, port) => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const wasEnabled = get().mcp_enabled;
+    set({ mcp_port: port });
+    await uc.saveAppSetting("mcp_port", port);
+    if (wasEnabled) {
+      try {
+        await invoke("stop_mcp_server");
+        await invoke("start_mcp_server", { port });
+      } catch {
+        set({ mcp_enabled: false });
+        await uc.saveAppSetting("mcp_enabled", false);
+        throw new Error("No se pudo reiniciar el servidor MCP");
+      }
+    }
   },
 }));

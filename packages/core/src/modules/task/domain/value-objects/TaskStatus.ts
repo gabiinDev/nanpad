@@ -46,11 +46,14 @@ export class TaskStatus {
 
   /**
    * Verifica si la tarea puede transicionar al estado indicado.
-   * Todas las transiciones entre estados distintos están permitidas.
+   * Casi todas las transiciones están permitidas; no se permite archived → done.
    * @param next - Estado al que se quiere mover.
    */
   canTransitionTo(next: TaskStatus): boolean {
-    return !this.equals(next);
+    if (this.equals(next)) return false;
+    // No permitir pasar de archivada directamente a completada.
+    if (this._value === "archived" && next._value === "done") return false;
+    return true;
   }
 
   equals(other: TaskStatus): boolean {

@@ -43,6 +43,7 @@ La especificación completa y el plan por fases están en la carpeta **`.resourc
 - **Arquitectura:** Module-First; cada módulo expone UseCases y DTOs; Event Bus inyectado; Composition Root manual.
 - **Persistencia:** SQLite vía `@tauri-apps/plugin-sql`; migraciones versionadas.
 - **Monorepo:** paquete `@nanpad/core` (lógica de dominio, UseCases y repositorios SQLite para task, category, document, history, storage, MCP) y `@nanpad/app` (UI Tauri + Vite).
+- **MCP:** servidor MCP en `@nanpad/core` para que agentes de IA interactúen con tareas, categorías, subtareas y adjuntos de código. En **Ajustes → Integración MCP** puedes activar un servidor HTTP local (solo 127.0.0.1). Para usarlo en **Cursor** o **VS Code** se incluye el adaptador stdio en `mcp-adapter/`; la misma pantalla de Ajustes explica cómo configurar el `mcp.json` en cada editor. Ver `packages/core/src/modules/mcp/README.md`.
 - **Tests:** Vitest en core y app; tests unitarios e integración por módulo en `@nanpad/core`.
 
 ---
@@ -170,6 +171,7 @@ NANPAD/
 ├── README.md                 # Este archivo
 ├── package.json              # Monorepo (pnpm workspaces)
 ├── AGENTS.md                 # Instrucciones para el agente de IA
+├── mcp-adapter/              # Adaptador stdio MCP para Cursor/VS Code (node mcp-adapter/index.mjs)
 ├── .resources/               # Plan maestro y especificación técnica (si existe)
 ├── packages/
 │   └── core/                 # @nanpad/core

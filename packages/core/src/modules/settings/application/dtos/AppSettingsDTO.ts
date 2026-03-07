@@ -8,7 +8,9 @@ export type AppSettingsKey =
   | "theme"
   | "high_performance"
   | "default_task_view"
-  | "show_help_icon";
+  | "show_help_icon"
+  | "mcp_enabled"
+  | "mcp_port";
 
 /** Preferencias de aplicación tipadas. */
 export interface AppSettingsDTO {
@@ -16,10 +18,12 @@ export interface AppSettingsDTO {
   high_performance: boolean;
   default_task_view: "list" | "kanban";
   show_help_icon: boolean;
+  mcp_enabled: boolean;
+  mcp_port: number;
 }
 
 /** Input para SaveAppSetting. */
 export interface SaveAppSettingInput {
   key: AppSettingsKey;
-  value: string | boolean;
+  value: string | boolean | number;
 }

@@ -3,7 +3,7 @@
  * Sidebar ultra-thin con indicador de ruta animado + header minimalista.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { AppRoute } from "./router.ts";
 import { useRouteStore } from "@/store/useRouteStore.ts";
 import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
@@ -47,6 +47,34 @@ const NAV_ITEMS: NavItem[] = [
   { route: "tasks",     label: "Tareas",     shortcut: "T", Icon: IconTasks },
   { route: "documents", label: "Explorador", shortcut: "E", Icon: IconDocument },
 ];
+
+/**
+ * Indicador de versión y estado MCP en la cabecera.
+ */
+function HeaderStatus() {
+  const mcpEnabled = useAppSettingsStore((s) => s.mcp_enabled);
+  const [version, setVersion] = useState<string>("");
+
+  useEffect(() => {
+    import("@tauri-apps/api/app")
+      .then((api) => api.getVersion())
+      .then(setVersion)
+      .catch(() => setVersion("—"));
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+      {version && <span>v{version}</span>}
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${mcpEnabled ? "bg-[var(--color-status-done)]" : "bg-[var(--color-priority-critical)]"}`}
+        aria-hidden
+      />
+      <span className={mcpEnabled ? "text-[var(--color-status-done)]" : "text-[var(--color-priority-critical)]"}>
+        MCP: {mcpEnabled ? "activo" : "desactivado"}
+      </span>
+    </div>
+  );
+}
 
 const ROUTE_META: Record<AppRoute, { label: string; sub: string }> = {
   home:      { label: "inicio",     sub: "resumen" },
@@ -92,10 +120,58 @@ export default function Shell() {
   const meta = ROUTE_META[route];
   const showHelpIcon = useAppSettingsStore((s) => s.show_help_icon);
 
-  // Hidratar preferencias desde DB al montar
+  // Hidratar preferencias desde DB al montar y arrancar MCP si estaba activado
   useEffect(() => {
     if (!uc) return;
-    void useAppSettingsStore.getState().load(uc);
+    void useAppSettingsStore.getState().load(uc).then(async () => {
+      const { mcp_enabled, mcp_port } = useAppSettingsStore.getState();
+      if (mcp_enabled) {
+        try {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("start_mcp_server", { port: mcp_port });
+        } catch {
+          // Puerto en uso o error: dejar desactivado en UI no, solo no arrancar
+        }
+      }
+    });
+  }, [uc]);
+
+  // Listener MCP: reenviar requests al McpServer y devolver respuesta por IPC
+  useEffect(() => {
+    if (!uc) return;
+    let unlisten: (() => void) | undefined;
+    void import("@tauri-apps/api/event").then(({ listen }) => {
+      return listen<{ requestId: string; tool: string; params: Record<string, unknown> }>("mcp_request", async (event) => {
+        const { requestId, tool, params } = event.payload;
+        try {
+          const response = await uc.mcpServer.handle({ tool, params: params ?? {} });
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("mcp_response", {
+            requestId,
+            response: {
+              success: response.success,
+              data: response.data,
+              error: response.error,
+            },
+          });
+        } catch (err) {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("mcp_response", {
+            requestId,
+            response: {
+              success: false,
+              data: undefined,
+              error: err instanceof Error ? err.message : String(err),
+            },
+          });
+        }
+      });
+    }).then((fn: () => void) => {
+      unlisten = fn;
+    });
+    return () => {
+      unlisten?.();
+    };
   }, [uc]);
 
   // Inicializar explorador al arrancar (tabs + temporales) para que Home muestre docs abiertos correctamente
@@ -320,8 +396,7 @@ export default function Shell() {
               <IconSearch size={12} />
               <span className="hidden sm:inline">Ctrl+K</span>
             </button>
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-status-done)]" />
-            <span className="text-xs text-[var(--color-text-muted)]">activo</span>
+            <HeaderStatus />
           </div>
         </header>
 

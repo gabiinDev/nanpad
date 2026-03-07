@@ -8,13 +8,20 @@ import {
   FakeListTasks,
   FakeMoveTaskStatus,
   FakeUpdateTask,
-  FakeCreateDocument,
-  FakeGetDocument,
-  FakeListDocuments,
+  FakeRestoreTask,
+  FakeAddSubtask,
+  FakeUpdateSubtask,
+  FakeDeleteSubtask,
+  FakeAttachCodeToTask,
+  FakeListCodeSnippetsForTask,
+  FakeDeleteCodeSnippet,
   FakeListCategories,
+  FakeCreateCategory,
+  FakeUpdateCategory,
+  FakeDeleteCategory,
   makeTaskDTO,
-  makeDocumentDTO,
-  makeDocumentWithContentDTO,
+  makeSubtaskDTO,
+  makeCodeSnippetDTO,
   makeCategoryDTO,
 } from "./fakes";
 
@@ -60,22 +67,35 @@ describe("McpToolRegistry", () => {
 
 // ─── McpServer.listTools ─────────────────────────────────────────────────────
 
+const EXPECTED_TOOL_NAMES = [
+  "create_task",
+  "complete_task",
+  "list_tasks",
+  "move_task_status",
+  "update_task",
+  "restore_task",
+  "add_subtask",
+  "update_subtask",
+  "delete_subtask",
+  "attach_code_to_task",
+  "list_code_snippets_for_task",
+  "delete_code_snippet",
+  "list_categories",
+  "create_category",
+  "update_category",
+  "delete_category",
+];
+
 describe("McpServer.listTools", () => {
-  it("exposes the 9 registered tools", () => {
+  it("exposes the 16 registered tools (no documents)", () => {
     const server = new McpServer(makeDeps());
     const tools = server.listTools();
     const names = tools.map((t) => t.name);
 
-    expect(names).toContain("create_task");
-    expect(names).toContain("complete_task");
-    expect(names).toContain("list_tasks");
-    expect(names).toContain("move_task_status");
-    expect(names).toContain("update_task");
-    expect(names).toContain("create_document");
-    expect(names).toContain("get_document");
-    expect(names).toContain("list_documents");
-    expect(names).toContain("list_categories");
-    expect(names).toHaveLength(9);
+    for (const name of EXPECTED_TOOL_NAMES) {
+      expect(names).toContain(name);
+    }
+    expect(names).toHaveLength(16);
   });
 
   it("each tool has a description and inputSchema", () => {
@@ -245,90 +265,151 @@ describe("Tool: update_task", () => {
   });
 });
 
-// ─── Tool: create_document ───────────────────────────────────────────────────
+// ─── Tool: restore_task ───────────────────────────────────────────────────────
 
-describe("Tool: create_document", () => {
-  it("calls CreateDocument and returns the document", async () => {
-    const createDocument = new FakeCreateDocument(makeDocumentDTO("d1", "My Doc"));
-    const server = new McpServer(makeDeps({ createDocument }));
+describe("Tool: restore_task", () => {
+  it("calls RestoreTask with the task id", async () => {
+    const restoreTask = new FakeRestoreTask();
+    const server = new McpServer(makeDeps({ restoreTask }));
 
     const response = await server.handle({
-      tool: "create_document",
-      params: { title: "My Doc", content: "# Hello" },
+      tool: "restore_task",
+      params: { id: "t1" },
     });
 
     expect(response.success).toBe(true);
-    expect((response.data as { title: string }).title).toBe("My Doc");
-    expect(createDocument.calls).toHaveLength(1);
+    expect(restoreTask.calls[0]).toBe("t1");
+  });
+});
+
+// ─── Tool: add_subtask ────────────────────────────────────────────────────────
+
+describe("Tool: add_subtask", () => {
+  it("calls AddSubtask with taskId and title", async () => {
+    const addSubtask = new FakeAddSubtask(makeSubtaskDTO("s1", "t1", "Do something"));
+    const server = new McpServer(makeDeps({ addSubtask }));
+
+    const response = await server.handle({
+      tool: "add_subtask",
+      params: { taskId: "t1", title: "Do something" },
+    });
+
+    expect(response.success).toBe(true);
+    expect((response.data as { title: string }).title).toBe("Do something");
+    expect(addSubtask.calls[0]).toEqual({ taskId: "t1", title: "Do something" });
   });
 
   it("returns error when title is missing", async () => {
     const server = new McpServer(makeDeps());
     const response = await server.handle({
-      tool: "create_document",
-      params: {},
+      tool: "add_subtask",
+      params: { taskId: "t1" },
     });
     expect(response.success).toBe(false);
   });
 });
 
-// ─── Tool: get_document ──────────────────────────────────────────────────────
+// ─── Tool: update_subtask ─────────────────────────────────────────────────────
 
-describe("Tool: get_document", () => {
-  it("returns the document with content", async () => {
-    const getDocument = new FakeGetDocument(makeDocumentWithContentDTO("d1", "Doc", "# Body"));
-    const server = new McpServer(makeDeps({ getDocument }));
+describe("Tool: update_subtask", () => {
+  it("calls UpdateSubtask with taskId, subtaskId and optional title/completed", async () => {
+    const updateSubtask = new FakeUpdateSubtask();
+    const server = new McpServer(makeDeps({ updateSubtask }));
 
-    const response = await server.handle({
-      tool: "get_document",
-      params: { id: "d1" },
+    await server.handle({
+      tool: "update_subtask",
+      params: { taskId: "t1", subtaskId: "s1", completed: true },
     });
 
-    expect(response.success).toBe(true);
-    expect((response.data as { content: string }).content).toBe("# Body");
-  });
-
-  it("returns null when document does not exist", async () => {
-    const getDocument = new FakeGetDocument(null);
-    const server = new McpServer(makeDeps({ getDocument }));
-
-    const response = await server.handle({
-      tool: "get_document",
-      params: { id: "missing" },
-    });
-
-    expect(response.success).toBe(true);
-    expect(response.data).toBeNull();
+    const call = updateSubtask.calls[0] as { taskId: string; subtaskId: string; completed: boolean };
+    expect(call.taskId).toBe("t1");
+    expect(call.subtaskId).toBe("s1");
+    expect(call.completed).toBe(true);
   });
 });
 
-// ─── Tool: list_documents ────────────────────────────────────────────────────
+// ─── Tool: delete_subtask ─────────────────────────────────────────────────────
 
-describe("Tool: list_documents", () => {
-  it("returns list of document metadata", async () => {
-    const listDocuments = new FakeListDocuments([makeDocumentDTO("d1"), makeDocumentDTO("d2")]);
-    const server = new McpServer(makeDeps({ listDocuments }));
+describe("Tool: delete_subtask", () => {
+  it("calls DeleteSubtask with taskId and subtaskId", async () => {
+    const deleteSubtask = new FakeDeleteSubtask();
+    const server = new McpServer(makeDeps({ deleteSubtask }));
 
     const response = await server.handle({
-      tool: "list_documents",
-      params: {},
+      tool: "delete_subtask",
+      params: { taskId: "t1", subtaskId: "s1" },
+    });
+
+    expect(response.success).toBe(true);
+    expect(deleteSubtask.calls[0]).toEqual({ taskId: "t1", subtaskId: "s1" });
+  });
+});
+
+// ─── Tool: attach_code_to_task ───────────────────────────────────────────────
+
+describe("Tool: attach_code_to_task", () => {
+  it("calls AttachCodeToTask with taskId, content and optional language", async () => {
+    const attachCodeToTask = new FakeAttachCodeToTask(makeCodeSnippetDTO("cs1", "t1", "const x = 1", "typescript"));
+    const server = new McpServer(makeDeps({ attachCodeToTask }));
+
+    const response = await server.handle({
+      tool: "attach_code_to_task",
+      params: { taskId: "t1", content: "const x = 1", language: "typescript" },
+    });
+
+    expect(response.success).toBe(true);
+    expect((response.data as { content: string }).content).toBe("const x = 1");
+    const call = attachCodeToTask.calls[0] as { taskId: string; content: string; language: string };
+    expect(call.taskId).toBe("t1");
+    expect(call.content).toBe("const x = 1");
+    expect(call.language).toBe("typescript");
+  });
+
+  it("returns error when content is missing", async () => {
+    const server = new McpServer(makeDeps());
+    const response = await server.handle({
+      tool: "attach_code_to_task",
+      params: { taskId: "t1" },
+    });
+    expect(response.success).toBe(false);
+  });
+});
+
+// ─── Tool: list_code_snippets_for_task ───────────────────────────────────────
+
+describe("Tool: list_code_snippets_for_task", () => {
+  it("returns list of code snippets for the task", async () => {
+    const listCodeSnippetsForTask = new FakeListCodeSnippetsForTask([
+      makeCodeSnippetDTO("cs1", "t1"),
+      makeCodeSnippetDTO("cs2", "t1"),
+    ]);
+    const server = new McpServer(makeDeps({ listCodeSnippetsForTask }));
+
+    const response = await server.handle({
+      tool: "list_code_snippets_for_task",
+      params: { taskId: "t1" },
     });
 
     expect(response.success).toBe(true);
     expect((response.data as unknown[]).length).toBe(2);
+    expect(listCodeSnippetsForTask.calls[0]).toBe("t1");
   });
+});
 
-  it("passes titleFilter to ListDocuments as text", async () => {
-    const listDocuments = new FakeListDocuments();
-    const server = new McpServer(makeDeps({ listDocuments }));
+// ─── Tool: delete_code_snippet ─────────────────────────────────────────────────
 
-    await server.handle({
-      tool: "list_documents",
-      params: { titleFilter: "Api" },
+describe("Tool: delete_code_snippet", () => {
+  it("calls DeleteCodeSnippet with snippetId", async () => {
+    const deleteCodeSnippet = new FakeDeleteCodeSnippet();
+    const server = new McpServer(makeDeps({ deleteCodeSnippet }));
+
+    const response = await server.handle({
+      tool: "delete_code_snippet",
+      params: { snippetId: "cs1" },
     });
 
-    const call = listDocuments.calls[0] as { text: string };
-    expect(call.text).toBe("Api");
+    expect(response.success).toBe(true);
+    expect((deleteCodeSnippet.calls[0] as { snippetId: string }).snippetId).toBe("cs1");
   });
 });
 
@@ -359,6 +440,69 @@ describe("Tool: list_categories", () => {
 
     const call = listCategories.calls[0] as { includeChildren: boolean };
     expect(call.includeChildren).toBe(true);
+  });
+});
+
+// ─── Tool: create_category ───────────────────────────────────────────────────
+
+describe("Tool: create_category", () => {
+  it("calls CreateCategory and returns the category", async () => {
+    const createCategory = new FakeCreateCategory(makeCategoryDTO("c1", "Work"));
+    const server = new McpServer(makeDeps({ createCategory }));
+
+    const response = await server.handle({
+      tool: "create_category",
+      params: { name: "Work" },
+    });
+
+    expect(response.success).toBe(true);
+    expect((response.data as { name: string }).name).toBe("Work");
+    expect(createCategory.calls[0]).toEqual({ name: "Work" });
+  });
+
+  it("returns error when name is missing", async () => {
+    const server = new McpServer(makeDeps());
+    const response = await server.handle({
+      tool: "create_category",
+      params: {},
+    });
+    expect(response.success).toBe(false);
+  });
+});
+
+// ─── Tool: update_category ───────────────────────────────────────────────────
+
+describe("Tool: update_category", () => {
+  it("calls UpdateCategory with id and optional fields", async () => {
+    const updateCategory = new FakeUpdateCategory();
+    const server = new McpServer(makeDeps({ updateCategory }));
+
+    await server.handle({
+      tool: "update_category",
+      params: { id: "c1", name: "New name" },
+    });
+
+    const call = updateCategory.calls[0] as { id: string; name: string };
+    expect(call.id).toBe("c1");
+    expect(call.name).toBe("New name");
+  });
+});
+
+// ─── Tool: delete_category ───────────────────────────────────────────────────
+
+describe("Tool: delete_category", () => {
+  it("calls DeleteCategory with id and strategy", async () => {
+    const deleteCategory = new FakeDeleteCategory();
+    const server = new McpServer(makeDeps({ deleteCategory }));
+
+    await server.handle({
+      tool: "delete_category",
+      params: { id: "c1", strategy: "unassign" },
+    });
+
+    const call = deleteCategory.calls[0] as { id: string; strategy: string };
+    expect(call.id).toBe("c1");
+    expect(call.strategy).toBe("unassign");
   });
 });
 

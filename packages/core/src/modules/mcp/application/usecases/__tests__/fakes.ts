@@ -3,9 +3,8 @@
  * Cada fake registra las llamadas recibidas y retorna datos predefinidos.
  */
 
-import type { TaskDTO } from "@modules/task/application/dtos/TaskDTO";
+import type { TaskDTO, SubtaskDTO, CodeSnippetDTO } from "@modules/task/application/dtos/TaskDTO";
 import type { CategoryDTO } from "@modules/category/application/dtos/CategoryDTO";
-import type { DocumentDTO, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO";
 import type {
   McpServerDeps,
   ICreateTask,
@@ -13,13 +12,20 @@ import type {
   IListTasks,
   IMoveTaskStatus,
   IUpdateTask,
-  ICreateDocument,
-  IGetDocument,
-  IListDocuments,
+  IRestoreTask,
+  IAddSubtask,
+  IUpdateSubtask,
+  IDeleteSubtask,
+  IAttachCodeToTask,
+  IListCodeSnippetsForTask,
+  IDeleteCodeSnippet,
   IListCategories,
+  ICreateCategory,
+  IUpdateCategory,
+  IDeleteCategory,
 } from "../McpServer";
 
-// ─── TaskDTO mínimo ───────────────────────────────────────────────────────────
+// ─── DTOs mínimos ─────────────────────────────────────────────────────────────
 
 export function makeTaskDTO(id = "t1", title = "Task"): TaskDTO {
   const now = new Date().toISOString();
@@ -40,18 +46,28 @@ export function makeTaskDTO(id = "t1", title = "Task"): TaskDTO {
   };
 }
 
+export function makeSubtaskDTO(id = "s1", taskId = "t1", title = "Subtask"): SubtaskDTO {
+  const now = new Date().toISOString();
+  return { id, taskId, title, completed: false, sortOrder: 0, createdAt: now, updatedAt: now };
+}
+
+export function makeCodeSnippetDTO(id = "cs1", taskId = "t1", content = "code", language = "typescript"): CodeSnippetDTO {
+  const now = new Date().toISOString();
+  return {
+    id,
+    taskId,
+    content,
+    language,
+    filePath: null,
+    lineStart: null,
+    lineEnd: null,
+    createdAt: now,
+  };
+}
+
 export function makeCategoryDTO(id = "c1", name = "Work"): CategoryDTO {
   const now = new Date().toISOString();
   return { id, name, parentId: null, color: null, icon: null, sortOrder: 0, createdAt: now, updatedAt: now };
-}
-
-export function makeDocumentDTO(id = "d1", title = "Doc"): DocumentDTO {
-  const now = new Date().toISOString();
-  return { id, title, contentHash: null, createdAt: now, updatedAt: now };
-}
-
-export function makeDocumentWithContentDTO(id = "d1", title = "Doc", content = "# Hello"): DocumentWithContentDTO {
-  return { ...makeDocumentDTO(id, title), content };
 }
 
 // ─── Fakes de UseCases ────────────────────────────────────────────────────────
@@ -59,7 +75,9 @@ export function makeDocumentWithContentDTO(id = "d1", title = "Doc", content = "
 export class FakeCreateTask {
   calls: unknown[] = [];
   private result: TaskDTO;
-  constructor(result?: TaskDTO) { this.result = result ?? makeTaskDTO(); }
+  constructor(result?: TaskDTO) {
+    this.result = result ?? makeTaskDTO();
+  }
   async execute(input: unknown): Promise<TaskDTO> {
     this.calls.push(input);
     return this.result;
@@ -69,7 +87,9 @@ export class FakeCreateTask {
 export class FakeCompleteTask {
   calls: string[] = [];
   private result: TaskDTO;
-  constructor(result?: TaskDTO) { this.result = result ?? makeTaskDTO("t1", "Done Task"); }
+  constructor(result?: TaskDTO) {
+    this.result = result ?? makeTaskDTO("t1", "Done Task");
+  }
   async execute(taskId: string): Promise<TaskDTO> {
     this.calls.push(taskId);
     return this.result;
@@ -79,7 +99,9 @@ export class FakeCompleteTask {
 export class FakeListTasks {
   calls: unknown[] = [];
   private result: TaskDTO[];
-  constructor(result?: TaskDTO[]) { this.result = result ?? [makeTaskDTO()]; }
+  constructor(result?: TaskDTO[]) {
+    this.result = result ?? [makeTaskDTO()];
+  }
   async execute(input?: unknown): Promise<{ tasks: TaskDTO[]; total: number }> {
     this.calls.push(input);
     return { tasks: this.result, total: this.result.length };
@@ -89,7 +111,9 @@ export class FakeListTasks {
 export class FakeMoveTaskStatus {
   calls: unknown[] = [];
   private result: TaskDTO;
-  constructor(result?: TaskDTO) { this.result = result ?? makeTaskDTO(); }
+  constructor(result?: TaskDTO) {
+    this.result = result ?? makeTaskDTO();
+  }
   async execute(input: unknown): Promise<TaskDTO> {
     this.calls.push(input);
     return this.result;
@@ -99,52 +123,129 @@ export class FakeMoveTaskStatus {
 export class FakeUpdateTask {
   calls: unknown[] = [];
   private result: TaskDTO;
-  constructor(result?: TaskDTO) { this.result = result ?? makeTaskDTO(); }
+  constructor(result?: TaskDTO) {
+    this.result = result ?? makeTaskDTO();
+  }
   async execute(input: unknown): Promise<TaskDTO> {
     this.calls.push(input);
     return this.result;
   }
 }
 
-export class FakeCreateDocument {
+export class FakeRestoreTask {
+  calls: string[] = [];
+  private result: TaskDTO;
+  constructor(result?: TaskDTO) {
+    this.result = result ?? makeTaskDTO();
+  }
+  async execute(taskId: string): Promise<TaskDTO> {
+    this.calls.push(taskId);
+    return this.result;
+  }
+}
+
+export class FakeAddSubtask {
   calls: unknown[] = [];
-  private result: DocumentDTO;
-  constructor(result?: DocumentDTO) { this.result = result ?? makeDocumentDTO(); }
-  async execute(input: unknown): Promise<DocumentDTO> {
+  private result: SubtaskDTO;
+  constructor(result?: SubtaskDTO) {
+    this.result = result ?? makeSubtaskDTO();
+  }
+  async execute(input: unknown): Promise<SubtaskDTO> {
     this.calls.push(input);
     return this.result;
   }
 }
 
-export class FakeGetDocument {
+export class FakeUpdateSubtask {
   calls: unknown[] = [];
-  private result: DocumentWithContentDTO | null;
-  constructor(result?: DocumentWithContentDTO | null) {
-    this.result = result !== undefined ? result : makeDocumentWithContentDTO();
+  private result: SubtaskDTO;
+  constructor(result?: SubtaskDTO) {
+    this.result = result ?? makeSubtaskDTO();
   }
-  async execute(input: unknown): Promise<DocumentWithContentDTO | null> {
+  async execute(input: unknown): Promise<SubtaskDTO> {
     this.calls.push(input);
     return this.result;
   }
 }
 
-export class FakeListDocuments {
+export class FakeDeleteSubtask {
   calls: unknown[] = [];
-  private result: DocumentDTO[];
-  constructor(result?: DocumentDTO[]) { this.result = result ?? [makeDocumentDTO()]; }
-  async execute(input: unknown): Promise<DocumentDTO[]> {
+  async execute(input: unknown): Promise<void> {
+    this.calls.push(input);
+  }
+}
+
+export class FakeAttachCodeToTask {
+  calls: unknown[] = [];
+  private result: CodeSnippetDTO;
+  constructor(result?: CodeSnippetDTO) {
+    this.result = result ?? makeCodeSnippetDTO();
+  }
+  async execute(input: unknown): Promise<CodeSnippetDTO> {
     this.calls.push(input);
     return this.result;
+  }
+}
+
+export class FakeListCodeSnippetsForTask {
+  calls: string[] = [];
+  private result: CodeSnippetDTO[];
+  constructor(result?: CodeSnippetDTO[]) {
+    this.result = result ?? [];
+  }
+  async execute(taskId: string): Promise<CodeSnippetDTO[]> {
+    this.calls.push(taskId);
+    return this.result;
+  }
+}
+
+export class FakeDeleteCodeSnippet {
+  calls: unknown[] = [];
+  async execute(input: unknown): Promise<void> {
+    this.calls.push(input);
   }
 }
 
 export class FakeListCategories {
   calls: unknown[] = [];
   private result: CategoryDTO[];
-  constructor(result?: CategoryDTO[]) { this.result = result ?? [makeCategoryDTO()]; }
+  constructor(result?: CategoryDTO[]) {
+    this.result = result ?? [makeCategoryDTO()];
+  }
   async execute(input: unknown): Promise<CategoryDTO[]> {
     this.calls.push(input);
     return this.result;
+  }
+}
+
+export class FakeCreateCategory {
+  calls: unknown[] = [];
+  private result: CategoryDTO;
+  constructor(result?: CategoryDTO) {
+    this.result = result ?? makeCategoryDTO();
+  }
+  async execute(input: unknown): Promise<CategoryDTO> {
+    this.calls.push(input);
+    return this.result;
+  }
+}
+
+export class FakeUpdateCategory {
+  calls: unknown[] = [];
+  private result: CategoryDTO;
+  constructor(result?: CategoryDTO) {
+    this.result = result ?? makeCategoryDTO();
+  }
+  async execute(input: unknown): Promise<CategoryDTO> {
+    this.calls.push(input);
+    return this.result;
+  }
+}
+
+export class FakeDeleteCategory {
+  calls: unknown[] = [];
+  async execute(input: unknown): Promise<void> {
+    this.calls.push(input);
   }
 }
 
@@ -155,10 +256,17 @@ export function makeDeps(overrides?: {
   listTasks?: IListTasks;
   moveTaskStatus?: IMoveTaskStatus;
   updateTask?: IUpdateTask;
-  createDocument?: ICreateDocument;
-  getDocument?: IGetDocument;
-  listDocuments?: IListDocuments;
+  restoreTask?: IRestoreTask;
+  addSubtask?: IAddSubtask;
+  updateSubtask?: IUpdateSubtask;
+  deleteSubtask?: IDeleteSubtask;
+  attachCodeToTask?: IAttachCodeToTask;
+  listCodeSnippetsForTask?: IListCodeSnippetsForTask;
+  deleteCodeSnippet?: IDeleteCodeSnippet;
   listCategories?: IListCategories;
+  createCategory?: ICreateCategory;
+  updateCategory?: IUpdateCategory;
+  deleteCategory?: IDeleteCategory;
 }): McpServerDeps {
   return {
     createTask: overrides?.createTask ?? new FakeCreateTask(),
@@ -166,9 +274,16 @@ export function makeDeps(overrides?: {
     listTasks: overrides?.listTasks ?? new FakeListTasks(),
     moveTaskStatus: overrides?.moveTaskStatus ?? new FakeMoveTaskStatus(),
     updateTask: overrides?.updateTask ?? new FakeUpdateTask(),
-    createDocument: overrides?.createDocument ?? new FakeCreateDocument(),
-    getDocument: overrides?.getDocument ?? new FakeGetDocument(),
-    listDocuments: overrides?.listDocuments ?? new FakeListDocuments(),
+    restoreTask: overrides?.restoreTask ?? new FakeRestoreTask(),
+    addSubtask: overrides?.addSubtask ?? new FakeAddSubtask(),
+    updateSubtask: overrides?.updateSubtask ?? new FakeUpdateSubtask(),
+    deleteSubtask: overrides?.deleteSubtask ?? new FakeDeleteSubtask(),
+    attachCodeToTask: overrides?.attachCodeToTask ?? new FakeAttachCodeToTask(),
+    listCodeSnippetsForTask: overrides?.listCodeSnippetsForTask ?? new FakeListCodeSnippetsForTask(),
+    deleteCodeSnippet: overrides?.deleteCodeSnippet ?? new FakeDeleteCodeSnippet(),
     listCategories: overrides?.listCategories ?? new FakeListCategories(),
+    createCategory: overrides?.createCategory ?? new FakeCreateCategory(),
+    updateCategory: overrides?.updateCategory ?? new FakeUpdateCategory(),
+    deleteCategory: overrides?.deleteCategory ?? new FakeDeleteCategory(),
   };
 }

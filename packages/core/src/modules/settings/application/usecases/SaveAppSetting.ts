@@ -12,7 +12,12 @@ export class SaveAppSetting {
    * @param input - Clave y valor (string o boolean).
    */
   async execute(input: SaveAppSettingInput): Promise<void> {
-    const value = typeof input.value === "boolean" ? String(input.value) : input.value;
+    const value =
+      typeof input.value === "boolean"
+        ? String(input.value)
+        : typeof input.value === "number"
+          ? String(input.value)
+          : input.value;
     await this.repository.set(input.key, value);
   }
 }

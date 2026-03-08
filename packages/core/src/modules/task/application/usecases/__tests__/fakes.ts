@@ -119,6 +119,12 @@ export class InMemoryHistoryRepository implements IHistoryRepository {
     );
   }
 
+  async countByEntity(entityType: string, entityId: EntityId): Promise<number> {
+    return [...this.entries.values()].filter(
+      (e) => e.entityType === entityType && e.entityId === entityId
+    ).length;
+  }
+
   async findByEntityType(entityType: string): Promise<HistoryEntry[]> {
     return [...this.entries.values()].filter(
       (e) => e.entityType === entityType

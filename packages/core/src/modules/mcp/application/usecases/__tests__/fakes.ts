@@ -23,7 +23,7 @@ import type {
   ICreateCategory,
   IUpdateCategory,
   IDeleteCategory,
-} from "../McpServer";
+} from "@modules/mcp/application/usecases/McpServer";
 
 // ─── DTOs mínimos ─────────────────────────────────────────────────────────────
 

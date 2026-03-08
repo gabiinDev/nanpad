@@ -20,7 +20,7 @@ export type {
 } from "./dtos/CategoryDTO";
 
 // ─── Contrato del repositorio (necesario para el Composition Root) ───────────
-export type { ICategoryRepository } from "../infrastructure/persistence/CategoryRepository";
+export type { ICategoryRepository } from "@modules/category/infrastructure/persistence/CategoryRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { CategorySqliteRepository } from "../infrastructure/persistence/sqlite/CategorySqliteRepository";
+export { CategorySqliteRepository } from "@modules/category/infrastructure/persistence/sqlite/CategorySqliteRepository";

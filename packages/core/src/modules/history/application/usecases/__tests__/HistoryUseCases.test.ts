@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { RecordChange } from "../RecordChange";
-import { GetEntityHistory } from "../GetEntityHistory";
-import { HistoryEventListener } from "../HistoryEventListener";
+import { RecordChange } from "@modules/history/application/usecases/RecordChange";
+import { GetEntityHistory } from "@modules/history/application/usecases/GetEntityHistory";
+import { HistoryEventListener } from "@modules/history/application/usecases/HistoryEventListener";
 import { EventBus } from "@shared/event-bus/EventBus";
 import { InMemoryHistoryRepository } from "./fakes";
 

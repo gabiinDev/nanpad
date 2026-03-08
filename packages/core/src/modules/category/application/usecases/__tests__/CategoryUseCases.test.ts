@@ -6,10 +6,10 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { EventBus } from "@shared/event-bus/EventBus";
-import { CreateCategory } from "../CreateCategory";
-import { UpdateCategory } from "../UpdateCategory";
-import { DeleteCategory } from "../DeleteCategory";
-import { ListCategories } from "../ListCategories";
+import { CreateCategory } from "@modules/category/application/usecases/CreateCategory";
+import { UpdateCategory } from "@modules/category/application/usecases/UpdateCategory";
+import { DeleteCategory } from "@modules/category/application/usecases/DeleteCategory";
+import { ListCategories } from "@modules/category/application/usecases/ListCategories";
 import { InMemoryCategoryRepository } from "./fakes";
 
 describe("CreateCategory", () => {

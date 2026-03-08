@@ -4,13 +4,13 @@
  */
 
 import type { IDatabase } from "@infra/db/IDatabase";
-import type { ITaskRepository } from "../TaskRepository";
-import { Task } from "../../../domain/entities/Task";
-import { Subtask } from "../../../domain/entities/Subtask";
-import { CodeSnippet } from "../../../domain/entities/CodeSnippet";
-import { TaskStatus } from "../../../domain/value-objects/TaskStatus";
-import { Priority } from "../../../domain/value-objects/Priority";
-import type { TaskFilters } from "../../../application/dtos/TaskDTO";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
+import { Task } from "@modules/task/domain/entities/Task";
+import { Subtask } from "@modules/task/domain/entities/Subtask";
+import { CodeSnippet } from "@modules/task/domain/entities/CodeSnippet";
+import { TaskStatus } from "@modules/task/domain/value-objects/TaskStatus";
+import { Priority } from "@modules/task/domain/value-objects/Priority";
+import type { TaskFilters } from "@modules/task/application/dtos/TaskDTO";
 import type { EntityId } from "@shared/types/id";
 import type {
   TaskRow,

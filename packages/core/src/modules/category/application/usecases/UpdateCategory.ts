@@ -2,11 +2,11 @@
  * UseCase: Actualizar una categoría existente.
  */
 
-import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository";
+import type { ICategoryRepository } from "@modules/category/infrastructure/persistence/CategoryRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { UpdateCategoryInput, CategoryDTO } from "../dtos/CategoryDTO";
-import { categoryToDTO } from "../dtos/mappers";
+import type { UpdateCategoryInput, CategoryDTO } from "@modules/category/application/dtos/CategoryDTO";
+import { categoryToDTO } from "@modules/category/application/dtos/mappers";
 
 /**
  * Actualiza los datos de una categoría existente.

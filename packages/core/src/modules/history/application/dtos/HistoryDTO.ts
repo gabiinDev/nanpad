@@ -3,7 +3,7 @@
  * Contrato público entre este módulo y el resto de la aplicación.
  */
 
-import type { HistoryAction } from "../../domain/entities/HistoryEntry";
+import type { HistoryAction } from "@modules/history/domain/entities/HistoryEntry";
 
 /** DTO de un registro de historial. */
 export interface HistoryEntryDTO {

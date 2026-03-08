@@ -3,7 +3,7 @@
  * Usado cuando el archivo físico ya no existe y el usuario confirma quitar el adjunto.
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
 import type { EntityId } from "@shared/types/id";

@@ -2,8 +2,8 @@
  * UseCase: Obtener las preferencias de aplicación.
  */
 
-import type { IAppSettingsRepository } from "../../infrastructure/persistence/AppSettingsRepository";
-import type { AppSettingsDTO } from "../dtos/AppSettingsDTO";
+import type { IAppSettingsRepository } from "@modules/settings/infrastructure/persistence/AppSettingsRepository";
+import type { AppSettingsDTO } from "@modules/settings/application/dtos/AppSettingsDTO";
 
 const DEFAULTS: AppSettingsDTO = {
   theme: "dark",

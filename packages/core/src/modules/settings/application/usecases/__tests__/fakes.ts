@@ -2,7 +2,7 @@
  * Fake del repositorio de preferencias para tests.
  */
 
-import type { IAppSettingsRepository } from "../../../infrastructure/persistence/AppSettingsRepository";
+import type { IAppSettingsRepository } from "@modules/settings/infrastructure/persistence/AppSettingsRepository";
 
 export class InMemoryAppSettingsRepository implements IAppSettingsRepository {
   private data = new Map<string, string>();

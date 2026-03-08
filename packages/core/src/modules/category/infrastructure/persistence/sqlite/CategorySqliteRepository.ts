@@ -4,8 +4,8 @@
  */
 
 import type { IDatabase } from "@infra/db/IDatabase";
-import type { ICategoryRepository, CategoryFilters } from "../CategoryRepository";
-import { Category } from "../../../domain/entities/Category";
+import type { ICategoryRepository, CategoryFilters } from "@modules/category/infrastructure/persistence/CategoryRepository";
+import { Category } from "@modules/category/domain/entities/Category";
 import type { CategoryRow } from "@infra/db/schema";
 import type { EntityId } from "@shared/types/id";
 

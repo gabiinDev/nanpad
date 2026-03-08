@@ -8,7 +8,7 @@ import type {
   ExportWorkspaceInput,
   ExportWorkspaceResult,
   WorkspaceSnapshot,
-} from "../dtos/StorageDTO";
+} from "@modules/storage/application/dtos/StorageDTO";
 
 /** Versión de la aplicación incluida en cada snapshot. */
 const APP_VERSION = "0.1.0";

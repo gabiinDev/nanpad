@@ -9,7 +9,7 @@ import type {
   ImportWorkspaceInput,
   ImportWorkspaceResult,
   WorkspaceSnapshot,
-} from "../dtos/StorageDTO";
+} from "@modules/storage/application/dtos/StorageDTO";
 
 /**
  * Importa un snapshot previamente exportado con ExportWorkspace.

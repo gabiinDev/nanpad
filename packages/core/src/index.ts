@@ -5,7 +5,7 @@
  */
 
 // ─── Shared Kernel ───────────────────────────────────────────────────────────
-export { EventBus, createEvent } from "./shared/event-bus/EventBus";
+export { EventBus, createEvent } from "@shared/event-bus/EventBus";
 export type {
   IEventBus,
   AppEvent,
@@ -22,15 +22,15 @@ export type {
   DocumentCreatedPayload,
   DocumentUpdatedPayload,
   DocumentDeletedPayload,
-} from "./shared/event-bus/types";
-export { generateId, isValidId } from "./shared/types/id";
-export type { EntityId } from "./shared/types/id";
-export { ok, err } from "./shared/types/result";
-export type { Result, Ok, Err } from "./shared/types/result";
+} from "@shared/event-bus/types";
+export { generateId, isValidId } from "@shared/types/id";
+export type { EntityId } from "@shared/types/id";
+export { ok, err } from "@shared/types/result";
+export type { Result, Ok, Err } from "@shared/types/result";
 
 // ─── Infraestructura (contratos) ─────────────────────────────────────────────
-export type { IDatabase } from "./infrastructure/db/IDatabase";
-export { runMigrations } from "./infrastructure/db/index";
+export type { IDatabase } from "@infra/db/IDatabase";
+export { runMigrations } from "@infra/db/index";
 export type {
   SchemaVersionRow,
   CategoryRow,
@@ -43,10 +43,10 @@ export type {
   DocumentRow,
   DocumentContentRow,
   HistoryEntryRow,
-} from "./infrastructure/db/schema";
+} from "@infra/db/schema";
 
 // ─── Módulo MCP ──────────────────────────────────────────────────────────────
-export { McpServer, McpToolRegistry } from "./modules/mcp/application/index";
+export { McpServer, McpToolRegistry } from "@modules/mcp/application/index";
 export type {
   McpServerDeps,
   McpRequest,
@@ -56,14 +56,14 @@ export type {
   McpToolEntry,
   McpParamSchema,
   McpParamType,
-} from "./modules/mcp/application/index";
+} from "@modules/mcp/application/index";
 
 // ─── Módulo Storage ──────────────────────────────────────────────────────────
 export {
   ExportWorkspace,
   ImportWorkspace,
   BackupNow,
-} from "./modules/storage/application/index";
+} from "@modules/storage/application/index";
 export type {
   WorkspaceSnapshot,
   ExportWorkspaceInput,
@@ -72,7 +72,7 @@ export type {
   ImportWorkspaceResult,
   BackupResult,
   IStoragePort,
-} from "./modules/storage/application/index";
+} from "@modules/storage/application/index";
 
 // ─── Módulo Document ─────────────────────────────────────────────────────────
 export {
@@ -82,7 +82,7 @@ export {
   ListDocuments,
   DeleteDocument,
   DocumentSqliteRepository,
-} from "./modules/document/application/index";
+} from "@modules/document/application/index";
 export type {
   DocumentDTO,
   DocumentWithContentDTO,
@@ -91,7 +91,7 @@ export type {
   GetDocumentInput,
   ListDocumentsInput,
   IDocumentRepository,
-} from "./modules/document/application/index";
+} from "@modules/document/application/index";
 
 // ─── Módulo History ──────────────────────────────────────────────────────────
 export {
@@ -99,14 +99,14 @@ export {
   GetEntityHistory,
   HistoryEventListener,
   HistorySqliteRepository,
-} from "./modules/history/application/index";
+} from "@modules/history/application/index";
 export type {
   HistoryEntryDTO,
   RecordChangeInput,
   GetEntityHistoryInput,
   HistoryAction,
   IHistoryRepository,
-} from "./modules/history/application/index";
+} from "@modules/history/application/index";
 
 // ─── Módulo Settings ─────────────────────────────────────────────────────────
 export {
@@ -114,13 +114,13 @@ export {
   SaveAppSetting,
   DEFAULTS as AppSettingsDefaults,
   AppSettingsSqliteRepository,
-} from "./modules/settings/application/index";
+} from "@modules/settings/application/index";
 export type {
   AppSettingsKey,
   AppSettingsDTO,
   SaveAppSettingInput,
   IAppSettingsRepository,
-} from "./modules/settings/application/index";
+} from "@modules/settings/application/index";
 
 // ─── Módulo Category ─────────────────────────────────────────────────────────
 export {
@@ -129,7 +129,7 @@ export {
   DeleteCategory,
   ListCategories,
   CategorySqliteRepository,
-} from "./modules/category/application/index";
+} from "@modules/category/application/index";
 export type {
   CategoryDTO,
   CreateCategoryInput,
@@ -137,7 +137,7 @@ export type {
   DeleteCategoryInput,
   ListCategoriesInput,
   ICategoryRepository,
-} from "./modules/category/application/index";
+} from "@modules/category/application/index";
 
 // ─── Módulo Task ─────────────────────────────────────────────────────────────
 export {
@@ -154,7 +154,7 @@ export {
   ListCodeSnippetsForTask,
   DeleteCodeSnippet,
   TaskSqliteRepository,
-} from "./modules/task/application/index";
+} from "@modules/task/application/index";
 export type {
   TaskDTO,
   SubtaskDTO,
@@ -170,4 +170,4 @@ export type {
   UpdateSubtaskInput,
   DeleteSubtaskInput,
   ITaskRepository,
-} from "./modules/task/application/index";
+} from "@modules/task/application/index";

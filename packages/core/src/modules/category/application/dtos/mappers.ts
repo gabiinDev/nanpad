@@ -2,7 +2,7 @@
  * Funciones de mapeo entre entidades de dominio y DTOs del módulo Category.
  */
 
-import type { Category } from "../../domain/entities/Category";
+import type { Category } from "@modules/category/domain/entities/Category";
 import type { CategoryDTO } from "./CategoryDTO";
 
 /**

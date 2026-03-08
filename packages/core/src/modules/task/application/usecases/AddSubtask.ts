@@ -2,12 +2,12 @@
  * UseCase: Añadir una subtarea a una tarea existente.
  */
 
-import { Subtask } from "../../domain/entities/Subtask";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import { Subtask } from "@modules/task/domain/entities/Subtask";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { AddSubtaskInput, SubtaskDTO } from "../dtos/TaskDTO";
-import { subtaskToDTO } from "../dtos/mappers";
+import type { AddSubtaskInput, SubtaskDTO } from "@modules/task/application/dtos/TaskDTO";
+import { subtaskToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Añade una nueva subtarea a una tarea existente.

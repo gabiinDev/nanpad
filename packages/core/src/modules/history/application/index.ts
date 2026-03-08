@@ -17,10 +17,10 @@ export type {
 } from "./dtos/HistoryDTO";
 
 // ─── Tipos de dominio necesarios externamente ────────────────────────────────
-export type { HistoryAction } from "../domain/entities/HistoryEntry";
+export type { HistoryAction } from "@modules/history/domain/entities/HistoryEntry";
 
 // ─── Contrato del repositorio ────────────────────────────────────────────────
-export type { IHistoryRepository } from "../infrastructure/persistence/HistoryRepository";
+export type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { HistorySqliteRepository } from "../infrastructure/persistence/sqlite/HistorySqliteRepository";
+export { HistorySqliteRepository } from "@modules/history/infrastructure/persistence/sqlite/HistorySqliteRepository";

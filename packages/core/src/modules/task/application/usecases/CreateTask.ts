@@ -2,13 +2,13 @@
  * UseCase: Crear una nueva tarea.
  */
 
-import { Task } from "../../domain/entities/Task";
-import { Priority } from "../../domain/value-objects/Priority";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import { Task } from "@modules/task/domain/entities/Task";
+import { Priority } from "@modules/task/domain/value-objects/Priority";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { CreateTaskInput, TaskDTO } from "../dtos/TaskDTO";
-import { taskToDTO } from "../dtos/mappers";
+import type { CreateTaskInput, TaskDTO } from "@modules/task/application/dtos/TaskDTO";
+import { taskToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Crea una nueva tarea y la persiste.

@@ -3,9 +3,9 @@
  * Soporta paginación con limit y offset.
  */
 
-import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository";
-import type { GetEntityHistoryInput, GetEntityHistoryOutput } from "../dtos/HistoryDTO";
-import { historyEntryToDTO } from "../dtos/mappers";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import type { GetEntityHistoryInput, GetEntityHistoryOutput } from "@modules/history/application/dtos/HistoryDTO";
+import { historyEntryToDTO } from "@modules/history/application/dtos/mappers";
 
 /**
  * Recupera el historial de una entidad ordenado cronológicamente.

@@ -5,7 +5,7 @@
 
 import type { IStoragePort } from "@modules/storage/infrastructure/IStoragePort";
 import { ExportWorkspace } from "./ExportWorkspace";
-import type { BackupResult } from "../dtos/StorageDTO";
+import type { BackupResult } from "@modules/storage/application/dtos/StorageDTO";
 
 /**
  * Genera un snapshot completo del workspace (incluido historial).

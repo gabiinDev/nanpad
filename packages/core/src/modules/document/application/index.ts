@@ -21,7 +21,7 @@ export type {
 } from "./dtos/DocumentDTO";
 
 // ─── Contrato del repositorio ─────────────────────────────────────────────────
-export type { IDocumentRepository } from "../infrastructure/persistence/DocumentRepository";
+export type { IDocumentRepository } from "@modules/document/infrastructure/persistence/DocumentRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { DocumentSqliteRepository } from "../infrastructure/persistence/sqlite/DocumentSqliteRepository";
+export { DocumentSqliteRepository } from "@modules/document/infrastructure/persistence/sqlite/DocumentSqliteRepository";

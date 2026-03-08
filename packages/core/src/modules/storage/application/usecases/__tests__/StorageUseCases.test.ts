@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { ExportWorkspace } from "../ExportWorkspace";
-import { ImportWorkspace } from "../ImportWorkspace";
-import { BackupNow } from "../BackupNow";
+import { ExportWorkspace } from "@modules/storage/application/usecases/ExportWorkspace";
+import { ImportWorkspace } from "@modules/storage/application/usecases/ImportWorkspace";
+import { BackupNow } from "@modules/storage/application/usecases/BackupNow";
 import { InMemoryStoragePort, makeTaskRow, makeCategoryRow } from "./fakes";
 
 describe("ExportWorkspace", () => {

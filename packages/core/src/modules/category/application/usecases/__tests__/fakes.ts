@@ -6,8 +6,8 @@
 import type {
   ICategoryRepository,
   CategoryFilters,
-} from "../../../infrastructure/persistence/CategoryRepository";
-import type { Category } from "../../../domain/entities/Category";
+} from "@modules/category/infrastructure/persistence/CategoryRepository";
+import type { Category } from "@modules/category/domain/entities/Category";
 import type { EntityId } from "@shared/types/id";
 
 /** Repositorio de categorías en memoria para tests. */

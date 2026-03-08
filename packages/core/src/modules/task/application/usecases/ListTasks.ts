@@ -2,9 +2,9 @@
  * UseCase: Listar tareas con filtros y paginación opcionales.
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
-import type { ListTasksInput, ListTasksResult } from "../dtos/TaskDTO";
-import { taskToDTO } from "../dtos/mappers";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
+import type { ListTasksInput, ListTasksResult } from "@modules/task/application/dtos/TaskDTO";
+import { taskToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Lista las tareas aplicando filtros y, opcionalmente, paginación.

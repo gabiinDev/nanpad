@@ -3,9 +3,9 @@
  * Usado para mostrar adjuntos como links en el formulario de tarea.
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
-import type { CodeSnippetDTO } from "../dtos/TaskDTO";
-import { codeSnippetToDTO } from "../dtos/mappers";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
+import type { CodeSnippetDTO } from "@modules/task/application/dtos/TaskDTO";
+import { codeSnippetToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Lista los fragmentos de código adjuntos a una tarea.

@@ -4,10 +4,10 @@
  * Las implementaciones concretas están en sqlite/.
  */
 
-import type { Task } from "../../domain/entities/Task";
-import type { Subtask } from "../../domain/entities/Subtask";
-import type { CodeSnippet } from "../../domain/entities/CodeSnippet";
-import type { TaskFilters } from "../../application/dtos/TaskDTO";
+import type { Task } from "@modules/task/domain/entities/Task";
+import type { Subtask } from "@modules/task/domain/entities/Subtask";
+import type { CodeSnippet } from "@modules/task/domain/entities/CodeSnippet";
+import type { TaskFilters } from "@modules/task/application/dtos/TaskDTO";
 import type { EntityId } from "@shared/types/id";
 
 /**

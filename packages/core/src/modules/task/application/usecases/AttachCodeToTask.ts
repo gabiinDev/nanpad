@@ -3,12 +3,12 @@
  * Permite capturar selecciones del editor Monaco y asociarlas a una tarea.
  */
 
-import { CodeSnippet } from "../../domain/entities/CodeSnippet";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import { CodeSnippet } from "@modules/task/domain/entities/CodeSnippet";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { AttachCodeToTaskInput, CodeSnippetDTO } from "../dtos/TaskDTO";
-import { codeSnippetToDTO } from "../dtos/mappers";
+import type { AttachCodeToTaskInput, CodeSnippetDTO } from "@modules/task/application/dtos/TaskDTO";
+import { codeSnippetToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Adjunta un fragmento de código a una tarea existente.

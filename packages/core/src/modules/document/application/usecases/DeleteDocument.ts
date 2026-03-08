@@ -2,7 +2,7 @@
  * UseCase: Eliminar un documento y su contenido.
  */
 
-import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository";
+import type { IDocumentRepository } from "@modules/document/infrastructure/persistence/DocumentRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
 

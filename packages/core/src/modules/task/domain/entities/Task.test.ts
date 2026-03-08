@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Task } from "./Task";
-import { Priority } from "../value-objects/Priority";
-import { TaskStatus } from "../value-objects/TaskStatus";
+import { Priority } from "@modules/task/domain/value-objects/Priority";
+import { TaskStatus } from "@modules/task/domain/value-objects/TaskStatus";
 
 describe("Task.create", () => {
   it("crea una tarea con título y valores por defecto", () => {

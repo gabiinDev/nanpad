@@ -4,8 +4,8 @@
  */
 
 import { generateId, type EntityId } from "@shared/types/id";
-import { TaskStatus } from "../value-objects/TaskStatus";
-import { Priority } from "../value-objects/Priority";
+import { TaskStatus } from "@modules/task/domain/value-objects/TaskStatus";
+import { Priority } from "@modules/task/domain/value-objects/Priority";
 import type { Subtask } from "./Subtask";
 
 /** Props para reconstruir una Task desde persistencia. */

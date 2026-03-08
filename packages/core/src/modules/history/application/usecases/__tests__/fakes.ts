@@ -2,8 +2,8 @@
  * Fakes para tests del módulo History.
  */
 
-import type { IHistoryRepository } from "../../../infrastructure/persistence/HistoryRepository";
-import { HistoryEntry } from "../../../domain/entities/HistoryEntry";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
 import type { EntityId } from "@shared/types/id";
 
 /** Repositorio de historial en memoria para tests. */

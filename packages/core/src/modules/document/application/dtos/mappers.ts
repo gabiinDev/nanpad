@@ -2,7 +2,7 @@
  * Funciones de mapeo entre entidades de dominio y DTOs del módulo Document.
  */
 
-import type { Document } from "../../domain/entities/Document";
+import type { Document } from "@modules/document/domain/entities/Document";
 import type { DocumentDTO, DocumentWithContentDTO } from "./DocumentDTO";
 
 /**

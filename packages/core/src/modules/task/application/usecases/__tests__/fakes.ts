@@ -3,11 +3,11 @@
  * Implementaciones en memoria de los repositorios e interfaces necesarias.
  */
 
-import type { ITaskRepository } from "../../../infrastructure/persistence/TaskRepository";
-import type { Task } from "../../../domain/entities/Task";
-import type { Subtask } from "../../../domain/entities/Subtask";
-import type { CodeSnippet } from "../../../domain/entities/CodeSnippet";
-import type { TaskFilters } from "../../dtos/TaskDTO";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
+import { Task } from "@modules/task/domain/entities/Task";
+import type { Subtask } from "@modules/task/domain/entities/Subtask";
+import type { CodeSnippet } from "@modules/task/domain/entities/CodeSnippet";
+import type { TaskFilters } from "@modules/task/application/dtos/TaskDTO";
 import type { EntityId } from "@shared/types/id";
 import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
 import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
@@ -23,7 +23,26 @@ export class InMemoryTaskRepository implements ITaskRepository {
   }
 
   async findById(id: EntityId): Promise<Task | null> {
-    return this.tasks.get(id) ?? null;
+    const task = this.tasks.get(id) ?? null;
+    if (!task) return null;
+    const taskSubtasks = [...this.subtasks.values()]
+      .filter((s) => s.taskId === id)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    return Task.reconstitute({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      priority: task.priority,
+      sortOrder: task.sortOrder,
+      completedAt: task.completedAt,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      documentId: task.documentId,
+      categoryIds: [...task.categoryIds],
+      tagIds: [...task.tagIds],
+      subtasks: taskSubtasks,
+    });
   }
 
   async findAll(

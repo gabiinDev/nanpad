@@ -2,9 +2,9 @@
  * UseCase: Obtener un documento completo (con contenido Markdown).
  */
 
-import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository";
-import type { GetDocumentInput, DocumentWithContentDTO } from "../dtos/DocumentDTO";
-import { documentToContentDTO } from "../dtos/mappers";
+import type { IDocumentRepository } from "@modules/document/infrastructure/persistence/DocumentRepository";
+import type { GetDocumentInput, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO";
+import { documentToContentDTO } from "@modules/document/application/dtos/mappers";
 
 /**
  * Recupera un documento por ID incluyendo su contenido completo.

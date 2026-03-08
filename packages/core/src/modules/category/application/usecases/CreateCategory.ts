@@ -2,12 +2,12 @@
  * UseCase: Crear una nueva categoría.
  */
 
-import { Category } from "../../domain/entities/Category";
-import type { ICategoryRepository } from "../../infrastructure/persistence/CategoryRepository";
+import { Category } from "@modules/category/domain/entities/Category";
+import type { ICategoryRepository } from "@modules/category/infrastructure/persistence/CategoryRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { CreateCategoryInput, CategoryDTO } from "../dtos/CategoryDTO";
-import { categoryToDTO } from "../dtos/mappers";
+import type { CreateCategoryInput, CategoryDTO } from "@modules/category/application/dtos/CategoryDTO";
+import { categoryToDTO } from "@modules/category/application/dtos/mappers";
 
 /**
  * Crea una nueva categoría y la persiste.

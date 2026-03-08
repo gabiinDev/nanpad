@@ -2,12 +2,12 @@
  * UseCase: Crear un nuevo documento.
  */
 
-import { Document } from "../../domain/entities/Document";
-import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository";
+import { Document } from "@modules/document/domain/entities/Document";
+import type { IDocumentRepository } from "@modules/document/infrastructure/persistence/DocumentRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { CreateDocumentInput, DocumentWithContentDTO } from "../dtos/DocumentDTO";
-import { documentToContentDTO } from "../dtos/mappers";
+import type { CreateDocumentInput, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO";
+import { documentToContentDTO } from "@modules/document/application/dtos/mappers";
 
 /**
  * Crea un nuevo documento y lo persiste.

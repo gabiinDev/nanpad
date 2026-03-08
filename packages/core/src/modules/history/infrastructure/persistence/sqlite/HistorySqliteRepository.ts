@@ -4,9 +4,9 @@
  */
 
 import type { IDatabase } from "@infra/db/IDatabase";
-import type { IHistoryRepository } from "../HistoryRepository";
-import { HistoryEntry } from "../../../domain/entities/HistoryEntry";
-import type { HistoryAction } from "../../../domain/entities/HistoryEntry";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
+import type { HistoryAction } from "@modules/history/domain/entities/HistoryEntry";
 import type { HistoryEntryRow } from "@infra/db/schema";
 import type { EntityId } from "@shared/types/id";
 

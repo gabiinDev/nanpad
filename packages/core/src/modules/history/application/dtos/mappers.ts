@@ -2,7 +2,7 @@
  * Funciones de mapeo entre entidades de dominio y DTOs del módulo History.
  */
 
-import type { HistoryEntry } from "../../domain/entities/HistoryEntry";
+import type { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
 import type { HistoryEntryDTO } from "./HistoryDTO";
 
 /**

@@ -2,12 +2,12 @@
  * UseCase: Actualizar campos de una tarea existente.
  */
 
-import { Priority } from "../../domain/value-objects/Priority";
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import { Priority } from "@modules/task/domain/value-objects/Priority";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { UpdateTaskInput, TaskDTO } from "../dtos/TaskDTO";
-import { taskToDTO } from "../dtos/mappers";
+import type { UpdateTaskInput, TaskDTO } from "@modules/task/application/dtos/TaskDTO";
+import { taskToDTO } from "@modules/task/application/dtos/mappers";
 
 /**
  * Actualiza los campos de una tarea existente.

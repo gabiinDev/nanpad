@@ -3,7 +3,7 @@
  * Define el contrato de persistencia para el módulo Document.
  */
 
-import type { Document } from "../../domain/entities/Document";
+import type { Document } from "@modules/document/domain/entities/Document";
 import type { EntityId } from "@shared/types/id";
 
 /** Filtros para buscar documentos. */

@@ -4,9 +4,9 @@
  * No emite eventos propios para evitar ciclos; el registro es un side-effect silencioso.
  */
 
-import { HistoryEntry } from "../../domain/entities/HistoryEntry";
-import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository";
-import type { RecordChangeInput } from "../dtos/HistoryDTO";
+import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
+import type { RecordChangeInput } from "@modules/history/application/dtos/HistoryDTO";
 
 /**
  * Persiste un nuevo registro de cambio en el historial.

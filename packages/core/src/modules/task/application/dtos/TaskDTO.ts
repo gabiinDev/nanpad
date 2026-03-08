@@ -4,8 +4,8 @@
  * No contienen lógica; solo estructuras de datos serializables.
  */
 
-import type { TaskStatusValue } from "../../domain/value-objects/TaskStatus";
-import type { PriorityValue } from "../../domain/value-objects/Priority";
+import type { TaskStatusValue } from "@modules/task/domain/value-objects/TaskStatus";
+import type { PriorityValue } from "@modules/task/domain/value-objects/Priority";
 
 /** DTO de una tarea completa. */
 export interface TaskDTO {

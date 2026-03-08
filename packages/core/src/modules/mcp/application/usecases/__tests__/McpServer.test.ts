@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { McpServer } from "../McpServer";
-import { McpToolRegistry } from "../McpToolRegistry";
+import { McpServer } from "@modules/mcp/application/usecases/McpServer";
+import { McpToolRegistry } from "@modules/mcp/application/usecases/McpToolRegistry";
 import {
   makeDeps,
   FakeCreateTask,

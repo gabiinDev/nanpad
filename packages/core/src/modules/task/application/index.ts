@@ -36,7 +36,7 @@ export type { DeleteSubtaskInput } from "./usecases/DeleteSubtask";
 
 
 // ─── Contrato del repositorio (necesario para el Composition Root) ───────────
-export type { ITaskRepository } from "../infrastructure/persistence/TaskRepository";
+export type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 
 // ─── Implementación SQLite (solo para el Composition Root) ───────────────────
-export { TaskSqliteRepository } from "../infrastructure/persistence/sqlite/TaskSqliteRepository";
+export { TaskSqliteRepository } from "@modules/task/infrastructure/persistence/sqlite/TaskSqliteRepository";

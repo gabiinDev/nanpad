@@ -25,7 +25,7 @@ import type {
 } from "@shared/event-bus/types";
 import type { AppEvent } from "@shared/event-bus/types";
 import { RecordChange } from "./RecordChange";
-import type { IHistoryRepository } from "../../infrastructure/persistence/HistoryRepository";
+import type { IHistoryRepository } from "@modules/history/infrastructure/persistence/HistoryRepository";
 
 /**
  * Registra en el historial los eventos de dominio emitidos por otros módulos.

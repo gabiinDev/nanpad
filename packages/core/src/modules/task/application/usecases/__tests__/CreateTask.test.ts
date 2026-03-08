@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { CreateTask } from "../CreateTask";
+import { CreateTask } from "@modules/task/application/usecases/CreateTask";
 import { EventBus } from "@shared/event-bus/EventBus";
 import { InMemoryTaskRepository } from "./fakes";
 

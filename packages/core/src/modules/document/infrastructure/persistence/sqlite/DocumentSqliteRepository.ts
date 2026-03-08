@@ -5,8 +5,8 @@
  */
 
 import type { IDatabase } from "@infra/db/IDatabase";
-import type { IDocumentRepository, DocumentFilters } from "../DocumentRepository";
-import { Document } from "../../../domain/entities/Document";
+import type { IDocumentRepository, DocumentFilters } from "@modules/document/infrastructure/persistence/DocumentRepository";
+import { Document } from "@modules/document/domain/entities/Document";
 import type { DocumentRow, DocumentContentRow } from "@infra/db/schema";
 import type { EntityId } from "@shared/types/id";
 

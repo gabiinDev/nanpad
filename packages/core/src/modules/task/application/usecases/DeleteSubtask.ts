@@ -2,7 +2,7 @@
  * UseCase: eliminar una subtarea.
  */
 
-import type { ITaskRepository } from "../../infrastructure/persistence/TaskRepository";
+import type { ITaskRepository } from "@modules/task/infrastructure/persistence/TaskRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
 

@@ -4,11 +4,11 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { EventBus } from "@shared/event-bus/EventBus";
-import { CreateDocument } from "../CreateDocument";
-import { UpdateDocument } from "../UpdateDocument";
-import { GetDocument } from "../GetDocument";
-import { ListDocuments } from "../ListDocuments";
-import { DeleteDocument } from "../DeleteDocument";
+import { CreateDocument } from "@modules/document/application/usecases/CreateDocument";
+import { UpdateDocument } from "@modules/document/application/usecases/UpdateDocument";
+import { GetDocument } from "@modules/document/application/usecases/GetDocument";
+import { ListDocuments } from "@modules/document/application/usecases/ListDocuments";
+import { DeleteDocument } from "@modules/document/application/usecases/DeleteDocument";
 import { InMemoryDocumentRepository } from "./fakes";
 
 describe("CreateDocument", () => {
@@ -197,6 +197,18 @@ describe("ListDocuments", () => {
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe("Architecture Guide");
   });
+
+  /** Performance: listado con muchos documentos debe responder en menos de 500 ms. */
+  it("ListDocuments con 2000 documentos responde en menos de 500 ms (performance)", async () => {
+    for (let i = 0; i < 2000; i++) {
+      await createDocument.execute({ title: `Doc ${i}` });
+    }
+    const start = performance.now();
+    const result = await listDocuments.execute();
+    const elapsed = performance.now() - start;
+    expect(result).toHaveLength(2000);
+    expect(elapsed).toBeLessThan(500);
+  }, 10_000);
 });
 
 describe("DeleteDocument", () => {

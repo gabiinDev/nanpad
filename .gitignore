@@ -73,3 +73,4 @@ temp/
 .stylelintcache
 *.tsbuildinfo
 .parcel-cache/
+nanpad-app/dummy-non-existing-folder/

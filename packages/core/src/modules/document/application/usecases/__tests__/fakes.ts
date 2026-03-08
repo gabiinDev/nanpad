@@ -5,8 +5,8 @@
 import type {
   IDocumentRepository,
   DocumentFilters,
-} from "../../../infrastructure/persistence/DocumentRepository";
-import type { Document } from "../../../domain/entities/Document";
+} from "@modules/document/infrastructure/persistence/DocumentRepository";
+import type { Document } from "@modules/document/domain/entities/Document";
 import type { EntityId } from "@shared/types/id";
 
 /** Repositorio de documentos en memoria para tests. */

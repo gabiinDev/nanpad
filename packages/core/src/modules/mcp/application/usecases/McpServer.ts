@@ -34,7 +34,7 @@ import type {
   McpRequest,
   McpResponse,
   McpToolDescriptor,
-} from "../dtos/McpDTO";
+} from "@modules/mcp/application/dtos/McpDTO";
 
 // ─── Interfaces estructurales de los UseCases ─────────────────────────────────
 // Se usan interfaces en lugar de clases concretas para desacoplar tests y fakes.

@@ -4,15 +4,19 @@
  * AddSubtask, AttachCodeToTask, GetTaskHistory.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { UpdateTask } from "../UpdateTask";
-import { ListTasks } from "../ListTasks";
-import { MoveTaskStatus } from "../MoveTaskStatus";
-import { CompleteTask } from "../CompleteTask";
-import { RestoreTask } from "../RestoreTask";
-import { AddSubtask } from "../AddSubtask";
-import { AttachCodeToTask } from "../AttachCodeToTask";
-import { GetTaskHistory } from "../GetTaskHistory";
-import { CreateTask } from "../CreateTask";
+import { UpdateTask } from "@modules/task/application/usecases/UpdateTask";
+import { ListTasks } from "@modules/task/application/usecases/ListTasks";
+import { MoveTaskStatus } from "@modules/task/application/usecases/MoveTaskStatus";
+import { CompleteTask } from "@modules/task/application/usecases/CompleteTask";
+import { RestoreTask } from "@modules/task/application/usecases/RestoreTask";
+import { AddSubtask } from "@modules/task/application/usecases/AddSubtask";
+import { UpdateSubtask } from "@modules/task/application/usecases/UpdateSubtask";
+import { DeleteSubtask } from "@modules/task/application/usecases/DeleteSubtask";
+import { AttachCodeToTask } from "@modules/task/application/usecases/AttachCodeToTask";
+import { ListCodeSnippetsForTask } from "@modules/task/application/usecases/ListCodeSnippetsForTask";
+import { DeleteCodeSnippet } from "@modules/task/application/usecases/DeleteCodeSnippet";
+import { GetTaskHistory } from "@modules/task/application/usecases/GetTaskHistory";
+import { CreateTask } from "@modules/task/application/usecases/CreateTask";
 import { EventBus } from "@shared/event-bus/EventBus";
 import { InMemoryTaskRepository, InMemoryHistoryRepository } from "./fakes";
 import { HistoryEntry } from "@modules/history/domain/entities/HistoryEntry";
@@ -227,6 +231,114 @@ describe("AddSubtask", () => {
   });
 });
 
+describe("UpdateSubtask", () => {
+  let repo: InMemoryTaskRepository;
+  let bus: EventBus;
+  let create: CreateTask;
+  let addSubtask: AddSubtask;
+  let updateSubtask: UpdateSubtask;
+
+  beforeEach(() => {
+    repo = new InMemoryTaskRepository();
+    bus = new EventBus();
+    create = new CreateTask(repo, bus);
+    addSubtask = new AddSubtask(repo, bus);
+    updateSubtask = new UpdateSubtask(repo, bus);
+  });
+
+  it("actualiza el título de una subtarea", async () => {
+    const task = await create.execute({ title: "Padre" });
+    const sub = await addSubtask.execute({ taskId: task.id, title: "Original" });
+
+    const updated = await updateSubtask.execute({
+      taskId: task.id,
+      subtaskId: sub.id,
+      title: "Nuevo título",
+    });
+
+    expect(updated.title).toBe("Nuevo título");
+    expect(updated.id).toBe(sub.id);
+  });
+
+  it("actualiza el estado completed de una subtarea", async () => {
+    const task = await create.execute({ title: "Padre" });
+    const sub = await addSubtask.execute({ taskId: task.id, title: "Sub" });
+
+    const updated = await updateSubtask.execute({
+      taskId: task.id,
+      subtaskId: sub.id,
+      completed: true,
+    });
+
+    expect(updated.completed).toBe(true);
+  });
+
+  it("lanza error si la tarea no existe", async () => {
+    await expect(
+      updateSubtask.execute({
+        taskId: "inexistente",
+        subtaskId: "sub-1",
+        title: "X",
+      })
+    ).rejects.toThrow("[UpdateSubtask] Tarea no encontrada");
+  });
+
+  it("lanza error si la subtarea no existe", async () => {
+    const task = await create.execute({ title: "Padre" });
+
+    await expect(
+      updateSubtask.execute({
+        taskId: task.id,
+        subtaskId: "sub-inexistente",
+        title: "X",
+      })
+    ).rejects.toThrow("[UpdateSubtask] Subtarea no encontrada");
+  });
+});
+
+describe("DeleteSubtask", () => {
+  let repo: InMemoryTaskRepository;
+  let bus: EventBus;
+  let create: CreateTask;
+  let addSubtask: AddSubtask;
+  let deleteSubtask: DeleteSubtask;
+
+  beforeEach(() => {
+    repo = new InMemoryTaskRepository();
+    bus = new EventBus();
+    create = new CreateTask(repo, bus);
+    addSubtask = new AddSubtask(repo, bus);
+    deleteSubtask = new DeleteSubtask(repo, bus);
+  });
+
+  it("elimina una subtarea existente", async () => {
+    const task = await create.execute({ title: "Padre" });
+    const sub = await addSubtask.execute({ taskId: task.id, title: "A borrar" });
+
+    await deleteSubtask.execute({ taskId: task.id, subtaskId: sub.id });
+
+    expect(repo.getAllSubtasks()).toHaveLength(0);
+  });
+
+  it("emite el evento task.subtask.removed", async () => {
+    const events: string[] = [];
+    bus.on("task.subtask.removed", (e) => { events.push(e.type); });
+
+    const task = await create.execute({ title: "Padre" });
+    const sub = await addSubtask.execute({ taskId: task.id, title: "Sub" });
+    await deleteSubtask.execute({ taskId: task.id, subtaskId: sub.id });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(events).toContain("task.subtask.removed");
+  });
+
+  it("lanza error si la tarea no existe", async () => {
+    await expect(
+      deleteSubtask.execute({ taskId: "inexistente", subtaskId: "sub-1" })
+    ).rejects.toThrow("[DeleteSubtask] Tarea no encontrada");
+  });
+});
+
 describe("AttachCodeToTask", () => {
   let repo: InMemoryTaskRepository;
   let bus: EventBus;
@@ -254,6 +366,91 @@ describe("AttachCodeToTask", () => {
     expect(snippet.taskId).toBe(task.id);
     expect(snippet.language).toBe("typescript");
     expect(snippet.lineStart).toBe(10);
+  });
+});
+
+describe("ListCodeSnippetsForTask", () => {
+  let repo: InMemoryTaskRepository;
+  let bus: EventBus;
+  let create: CreateTask;
+  let attach: AttachCodeToTask;
+  let listSnippets: ListCodeSnippetsForTask;
+
+  beforeEach(() => {
+    repo = new InMemoryTaskRepository();
+    bus = new EventBus();
+    create = new CreateTask(repo, bus);
+    attach = new AttachCodeToTask(repo, bus);
+    listSnippets = new ListCodeSnippetsForTask(repo);
+  });
+
+  it("retorna los fragmentos de código de una tarea", async () => {
+    const task = await create.execute({ title: "Tarea" });
+    await attach.execute({ taskId: task.id, content: "code 1" });
+    await attach.execute({ taskId: task.id, content: "code 2" });
+
+    const result = await listSnippets.execute(task.id);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].taskId).toBe(task.id);
+    expect(result[1].taskId).toBe(task.id);
+  });
+
+  it("retorna array vacío cuando la tarea no tiene snippets", async () => {
+    const task = await create.execute({ title: "Sin snippets" });
+
+    const result = await listSnippets.execute(task.id);
+
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe("DeleteCodeSnippet", () => {
+  let repo: InMemoryTaskRepository;
+  let bus: EventBus;
+  let create: CreateTask;
+  let attach: AttachCodeToTask;
+  let deleteSnippet: DeleteCodeSnippet;
+
+  beforeEach(() => {
+    repo = new InMemoryTaskRepository();
+    bus = new EventBus();
+    create = new CreateTask(repo, bus);
+    attach = new AttachCodeToTask(repo, bus);
+    deleteSnippet = new DeleteCodeSnippet(repo, bus);
+  });
+
+  it("elimina un fragmento de código por id", async () => {
+    const task = await create.execute({ title: "Tarea" });
+    const snippet = await attach.execute({ taskId: task.id, content: "code" });
+
+    await deleteSnippet.execute(snippet.id);
+
+    const list = new ListCodeSnippetsForTask(repo);
+    const remaining = await list.execute(task.id);
+    expect(remaining).toHaveLength(0);
+  });
+
+  it("acepta input como objeto con snippetId", async () => {
+    const task = await create.execute({ title: "Tarea" });
+    const snippet = await attach.execute({ taskId: task.id, content: "x" });
+
+    await deleteSnippet.execute({ snippetId: snippet.id });
+
+    const list = new ListCodeSnippetsForTask(repo);
+    expect(await list.execute(task.id)).toHaveLength(0);
+  });
+
+  it("emite task.attachment.removed cuando se proporciona taskId", async () => {
+    const events: string[] = [];
+    bus.on("task.attachment.removed", (e) => { events.push(e.type); });
+
+    const task = await create.execute({ title: "Tarea" });
+    const snippet = await attach.execute({ taskId: task.id, content: "x" });
+    await deleteSnippet.execute({ snippetId: snippet.id, taskId: task.id });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(events).toContain("task.attachment.removed");
   });
 });
 

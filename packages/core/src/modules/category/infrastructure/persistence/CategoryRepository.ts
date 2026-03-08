@@ -4,7 +4,7 @@
  * Las implementaciones concretas están en sqlite/.
  */
 
-import type { Category } from "../../domain/entities/Category";
+import type { Category } from "@modules/category/domain/entities/Category";
 import type { EntityId } from "@shared/types/id";
 
 /**

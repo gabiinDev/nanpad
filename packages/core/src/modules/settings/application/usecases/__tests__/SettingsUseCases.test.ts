@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { GetAppSettings } from "../GetAppSettings";
-import { SaveAppSetting } from "../SaveAppSetting";
+import { GetAppSettings } from "@modules/settings/application/usecases/GetAppSettings";
+import { SaveAppSetting } from "@modules/settings/application/usecases/SaveAppSetting";
 import { InMemoryAppSettingsRepository } from "./fakes";
 
 describe("GetAppSettings", () => {

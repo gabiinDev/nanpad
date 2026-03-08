@@ -2,8 +2,8 @@
  * UseCase: Guardar una preferencia de aplicación.
  */
 
-import type { IAppSettingsRepository } from "../../infrastructure/persistence/AppSettingsRepository";
-import type { SaveAppSettingInput } from "../dtos/AppSettingsDTO";
+import type { IAppSettingsRepository } from "@modules/settings/infrastructure/persistence/AppSettingsRepository";
+import type { SaveAppSettingInput } from "@modules/settings/application/dtos/AppSettingsDTO";
 
 export class SaveAppSetting {
   constructor(private readonly repository: IAppSettingsRepository) {}

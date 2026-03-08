@@ -3,9 +3,9 @@
  * Son puras y sin efectos secundarios.
  */
 
-import type { Task } from "../../domain/entities/Task";
-import type { Subtask } from "../../domain/entities/Subtask";
-import type { CodeSnippet } from "../../domain/entities/CodeSnippet";
+import type { Task } from "@modules/task/domain/entities/Task";
+import type { Subtask } from "@modules/task/domain/entities/Subtask";
+import type { CodeSnippet } from "@modules/task/domain/entities/CodeSnippet";
 import type { TaskDTO, SubtaskDTO, CodeSnippetDTO } from "./TaskDTO";
 
 /**

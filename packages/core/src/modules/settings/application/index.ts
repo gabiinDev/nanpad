@@ -12,5 +12,5 @@ export type {
   SaveAppSettingInput,
 } from "./dtos/AppSettingsDTO";
 
-export type { IAppSettingsRepository } from "../infrastructure/persistence/AppSettingsRepository";
-export { AppSettingsSqliteRepository } from "../infrastructure/persistence/sqlite/AppSettingsSqliteRepository";
+export type { IAppSettingsRepository } from "@modules/settings/infrastructure/persistence/AppSettingsRepository";
+export { AppSettingsSqliteRepository } from "@modules/settings/infrastructure/persistence/sqlite/AppSettingsSqliteRepository";

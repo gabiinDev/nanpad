@@ -3,7 +3,7 @@
  */
 
 import type { IDatabase } from "@infra/db/IDatabase";
-import type { IAppSettingsRepository } from "../AppSettingsRepository";
+import type { IAppSettingsRepository } from "@modules/settings/infrastructure/persistence/AppSettingsRepository";
 
 const KEYS = [
   "theme",

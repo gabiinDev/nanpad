@@ -2,11 +2,11 @@
  * UseCase: Actualizar título y/o contenido de un documento existente.
  */
 
-import type { IDocumentRepository } from "../../infrastructure/persistence/DocumentRepository";
+import type { IDocumentRepository } from "@modules/document/infrastructure/persistence/DocumentRepository";
 import type { IEventBus } from "@shared/event-bus/types";
 import { createEvent } from "@shared/event-bus/EventBus";
-import type { UpdateDocumentInput, DocumentWithContentDTO } from "../dtos/DocumentDTO";
-import { documentToContentDTO } from "../dtos/mappers";
+import type { UpdateDocumentInput, DocumentWithContentDTO } from "@modules/document/application/dtos/DocumentDTO";
+import { documentToContentDTO } from "@modules/document/application/dtos/mappers";
 
 /**
  * Actualiza un documento existente.

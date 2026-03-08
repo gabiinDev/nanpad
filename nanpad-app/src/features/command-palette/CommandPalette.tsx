@@ -1,6 +1,6 @@
 /**
- * CommandPalette — modal de búsqueda rápida (Ctrl+K).
- * Permite navegar a secciones, crear tarea, ir a una tarea o a un documento abierto.
+ * CommandPalette — búsqueda global unificada (Ctrl+K / Ctrl+Shift+F).
+ * Busca en: navegación, acciones, tareas, archivos abiertos y contenido de archivos.
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
@@ -11,10 +11,14 @@ import { useCommandPaletteStore } from "@/store/useCommandPaletteStore.ts";
 import { useExplorerStore } from "@/store/useExplorerStore.ts";
 import { useNavFocusStore } from "@/store/useNavFocusStore.ts";
 import type { TaskDTO } from "@nanpad/core";
+import type { OpenTab } from "@/store/useExplorerStore.ts";
 import { IconClose, IconHome, IconTasks, IconDocument, IconSettings, IconPlus, IconSearch } from "@ui/icons/index.tsx";
 import { getStatusLabel } from "@ui/components/Badge.tsx";
 
-type CommandItemType = "navigate" | "action" | "task" | "document";
+const MAX_CONTENT_MATCHES = 50;
+const MAX_TASKS = 100;
+
+type CommandItemType = "navigate" | "action" | "task" | "document" | "content_match";
 
 interface CommandItem {
   id: string;
@@ -22,7 +26,26 @@ interface CommandItem {
   label: string;
   subtitle?: string;
   keywords?: string[];
+  /** Solo para content_match: línea de código donde aparece la coincidencia. */
+  lineText?: string;
   run: () => void;
+}
+
+/** Busca el texto en el contenido de los tabs abiertos. Devuelve coincidencias por archivo y línea. */
+function searchInTabs(tabs: OpenTab[], query: string): Array<{ tabId: string; label: string; lineNumber: number; lineText: string }> {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase();
+  const results: Array<{ tabId: string; label: string; lineNumber: number; lineText: string }> = [];
+  for (const tab of tabs) {
+    const lines = tab.content.split(/\r?\n/);
+    for (let i = 0; i < lines.length && results.length < MAX_CONTENT_MATCHES; i++) {
+      const idx = lines[i].toLowerCase().indexOf(q);
+      if (idx !== -1) {
+        results.push({ tabId: tab.id, label: tab.label, lineNumber: i + 1, lineText: lines[i] });
+      }
+    }
+  }
+  return results;
 }
 
 const ROUTE_ITEMS: { route: AppRoute; label: string; IconComponent: React.ComponentType<{ size?: number }> }[] = [
@@ -41,6 +64,11 @@ function matchesQuery(text: string, query: string): boolean {
   const nq = normalizeQuery(query);
   const nt = normalizeQuery(text);
   return nt.includes(nq);
+}
+
+/** Dispara el evento para que el editor revele una línea. */
+function revealLineInEditor(tabId: string, lineNumber: number): void {
+  window.dispatchEvent(new CustomEvent("nanpad:editor-reveal-line", { detail: { tabId, lineNumber } }));
 }
 
 export function CommandPalette() {
@@ -65,9 +93,14 @@ export function CommandPalette() {
     setLoading(true);
     uc.listTasks
       .execute({})
-      .then((result) => setTasks(result.tasks.slice(0, 50)))
+      .then((result) => setTasks(result.tasks.slice(0, MAX_TASKS)))
       .finally(() => setLoading(false));
   }, [open, uc.listTasks]);
+
+  const contentMatches = useMemo(
+    () => (query.trim() ? searchInTabs(openTabs, query.trim()) : []),
+    [openTabs, query]
+  );
 
   const items = useMemo((): CommandItem[] => {
     const nav: CommandItem[] = ROUTE_ITEMS.map(({ route: r, label }) => ({
@@ -115,13 +148,27 @@ export function CommandPalette() {
         setOpen(false);
       },
     }));
-    return [...nav, ...actions, ...taskItems, ...docItems];
-  }, [tasks, openTabs, setRoute, setOpen, setActiveTab, setFocusTaskId, onOpenNewTask]);
+    const contentItems: CommandItem[] = contentMatches.map((m, i) => ({
+      id: `content-${m.tabId}-${m.lineNumber}-${i}`,
+      type: "content_match" as const,
+      label: `${m.label}:${m.lineNumber}`,
+      subtitle: m.lineText.trim().slice(0, 60) + (m.lineText.length > 60 ? "…" : ""),
+      lineText: m.lineText,
+      run: () => {
+        setRoute("documents");
+        setActiveTab(m.tabId);
+        revealLineInEditor(m.tabId, m.lineNumber);
+        setOpen(false);
+      },
+    }));
+    return [...nav, ...actions, ...taskItems, ...docItems, ...contentItems];
+  }, [tasks, openTabs, contentMatches, setRoute, setOpen, setActiveTab, setFocusTaskId, onOpenNewTask]);
 
   const filteredItems = useMemo(() => {
     if (!query) return items;
     const q = normalizeQuery(query);
     return items.filter((it) => {
+      if (it.type === "content_match") return true;
       if (it.type === "navigate" || it.type === "action") {
         return matchesQuery(it.label, q) || (it.keywords?.some((k) => matchesQuery(k, q)) ?? false);
       }
@@ -171,7 +218,7 @@ export function CommandPalette() {
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] bg-black/50 backdrop-blur-sm"
       onClick={() => setOpen(false)}
       role="dialog"
-      aria-label="Buscar o ir a"
+      aria-label="Búsqueda global: tareas, archivos y contenido"
     >
       <div
         className="w-full max-w-xl rounded-xl border border-[var(--color-border-strong)] bg-[var(--color-surface-2)] shadow-[var(--shadow-xl)]"
@@ -188,7 +235,7 @@ export function CommandPalette() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Buscar sección, tarea o documento…"
+            placeholder="Buscar en todo: secciones, tareas, archivos, contenido…"
             className="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
             autoComplete="off"
           />
@@ -239,6 +286,11 @@ export function CommandPalette() {
                 {item.type === "document" && (
                   <span className="text-[var(--color-text-muted)]">
                     <IconDocument size={14} />
+                  </span>
+                )}
+                {item.type === "content_match" && (
+                  <span className="text-[var(--color-accent)]">
+                    <IconSearch size={14} />
                   </span>
                 )}
                 <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>

@@ -219,11 +219,15 @@ export default function Shell() {
     return () => window.removeEventListener("keydown", handler);
   }, [route]);
 
-  // Ctrl+K: abrir command palette
+  // Ctrl+K o Ctrl+Shift+F: abrir búsqueda global (command palette)
   const setPaletteOpen = useCommandPaletteStore((s) => s.setOpen);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key?.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen(true);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key?.toLowerCase() === "f") {
         e.preventDefault();
         setPaletteOpen(true);
       }
@@ -390,11 +394,11 @@ export default function Shell() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              title="Buscar o ir a (Ctrl+K)"
+              title="Búsqueda global (Ctrl+K o Ctrl+Shift+F)"
               className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-secondary)]"
             >
               <IconSearch size={12} />
-              <span className="hidden sm:inline">Ctrl+K</span>
+              <span className="hidden sm:inline">Ctrl+K / Ctrl+Shift+F</span>
             </button>
             <HeaderStatus />
           </div>

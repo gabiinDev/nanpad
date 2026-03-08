@@ -26,8 +26,8 @@ const styles = {
 
 const GLOBAL_NAV = (
   <p className={styles.nav}>
-    <kbd className={styles.kbd}>Ctrl+K</kbd> Buscar o ir a · <kbd className={styles.kbd}>H</kbd> Inicio · <kbd className={styles.kbd}>T</kbd> Tareas ·{" "}
-    <kbd className={styles.kbd}>E</kbd> Explorador · <kbd className={styles.kbd}>S</kbd> Ajustes
+    <kbd className={styles.kbd}>Ctrl+K</kbd> / <kbd className={styles.kbd}>Ctrl+Shift+F</kbd> Búsqueda global · <kbd className={styles.kbd}>H</kbd> Inicio ·{" "}
+    <kbd className={styles.kbd}>T</kbd> Tareas · <kbd className={styles.kbd}>E</kbd> Explorador · <kbd className={styles.kbd}>S</kbd> Ajustes
   </p>
 );
 
@@ -86,7 +86,8 @@ function HelpPanelContent({ route }: { route: AppRoute }) {
         <div className={styles.separator} />
         <h3 className={styles.sectionTitle}>Inicio</h3>
         <p className={styles.paragraph}>
-          Resumen del workspace. <kbd className={styles.kbd}>Ctrl+K</kbd> abre la búsqueda rápida para ir a una sección, tarea o documento.
+          Resumen del workspace. <kbd className={styles.kbd}>Ctrl+K</kbd> o <kbd className={styles.kbd}>Ctrl+Shift+F</kbd> abren la búsqueda global:
+          tareas, archivos abiertos y contenido dentro de los archivos.
         </p>
       </>
     );

@@ -4,7 +4,6 @@
  * La inicialización de infraestructura (DB, Composition Root) ocurre en App.tsx.
  */
 
-import React from "react";
 import ReactDOM from "react-dom/client";
 import loader from "@monaco-editor/loader";
 import "./App.css";
@@ -19,12 +18,21 @@ window.addEventListener("unhandledrejection", (event) => {
   const r = event.reason;
   if (!r) return;
   // Loader: useMonaco cancela al desmontar sin .catch()
-  if (typeof r === "object" && r.type === "cancelation" && r.msg === "operation is manually canceled") {
+  if (
+    typeof r === "object" &&
+    r.type === "cancelation" &&
+    r.msg === "operation is manually canceled"
+  ) {
     event.preventDefault();
     return;
   }
   // Monaco: al cambiar a solo preview el editor se dispone y cancela promesas internas ("Canceled").
-  const msg = r instanceof Error ? r.message : typeof r === "string" ? r : (r as { message?: string })?.message;
+  const msg =
+    r instanceof Error
+      ? r.message
+      : typeof r === "string"
+        ? r
+        : (r as { message?: string })?.message;
   if (msg === "Canceled" || msg === "Canceled: Canceled") {
     event.preventDefault();
   }
@@ -34,8 +42,4 @@ window.addEventListener("unhandledrejection", (event) => {
 // El arrastre HTML5 nativo no funciona en WebView2 sin este parche.
 installWebView2DndPolyfill();
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);

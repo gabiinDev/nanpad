@@ -3,7 +3,7 @@
  * Sidebar ultra-thin con indicador de ruta animado + header minimalista.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { AppRoute } from "./router.ts";
 import { useRouteStore } from "@/store/useRouteStore.ts";
 import { useSearchFocusStore } from "@/store/useSearchFocusStore.ts";
@@ -47,34 +47,6 @@ const NAV_ITEMS: NavItem[] = [
   { route: "tasks",     label: "Tareas",     shortcut: "T", Icon: IconTasks },
   { route: "documents", label: "Explorador", shortcut: "E", Icon: IconDocument },
 ];
-
-/**
- * Indicador de versión y estado MCP en la cabecera.
- */
-function HeaderStatus() {
-  const mcpEnabled = useAppSettingsStore((s) => s.mcp_enabled);
-  const [version, setVersion] = useState<string>("");
-
-  useEffect(() => {
-    import("@tauri-apps/api/app")
-      .then((api) => api.getVersion())
-      .then(setVersion)
-      .catch(() => setVersion("—"));
-  }, []);
-
-  return (
-    <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-      {version && <span>v{version}</span>}
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${mcpEnabled ? "bg-[var(--color-status-done)]" : "bg-[var(--color-priority-critical)]"}`}
-        aria-hidden
-      />
-      <span className={mcpEnabled ? "text-[var(--color-status-done)]" : "text-[var(--color-priority-critical)]"}>
-        MCP: {mcpEnabled ? "activo" : "desactivado"}
-      </span>
-    </div>
-  );
-}
 
 const ROUTE_META: Record<AppRoute, { label: string; sub: string }> = {
   home:      { label: "inicio",     sub: "resumen" },
@@ -400,7 +372,6 @@ export default function Shell() {
               <IconSearch size={12} />
               <span className="hidden sm:inline">Ctrl+K / Ctrl+Shift+F</span>
             </button>
-            <HeaderStatus />
           </div>
         </header>
 

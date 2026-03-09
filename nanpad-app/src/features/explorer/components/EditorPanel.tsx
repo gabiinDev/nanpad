@@ -11,7 +11,10 @@ import type { editor } from "monaco-editor";
 import type { OpenTab } from "@/store/useExplorerStore.ts";
 import { useExplorerStore, type MdPanelMode } from "@/store/useExplorerStore.ts";
 import { detectLanguage } from "@features/explorer/utils/langDetect.ts";
+import { isImagePreviewExt } from "@ui/icons/fileIconByExt.tsx";
 import { MarkdownPreview } from "@features/documents/components/MarkdownPreview.tsx";
+import { PdfPreview } from "@features/documents/components/PdfPreview.tsx";
+import { ImagePreview } from "@features/documents/components/ImagePreview.tsx";
 import {
   IconSave,
   IconEditorMode,
@@ -324,8 +327,52 @@ interface EditorPanelProps {
 
 /**
  * Panel de edición con Monaco + preview opcional para Markdown.
+ * Para PDF e imágenes solo muestra vista previa (sin modos editor/dividido).
  */
 export function EditorPanel({ tab, isDark }: EditorPanelProps) {
+  const isPdf = tab.ext === "pdf" && !!tab.path;
+  const isImage = isImagePreviewExt(tab.ext) && !!tab.path;
+
+  if (isPdf && tab.path) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0 text-[var(--color-text-muted)]">
+              <ExplorerFileIcon ext="pdf" size={13} />
+            </span>
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.8125rem] text-[var(--color-text-secondary)]">
+              {tab.label}
+            </span>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <PdfPreview path={tab.path} className="h-full min-h-[calc(100vh-12rem)]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isImage && tab.path) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex h-9 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="shrink-0 text-[var(--color-text-muted)]">
+              <ExplorerFileIcon ext={tab.ext} size={13} />
+            </span>
+            <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[0.8125rem] text-[var(--color-text-secondary)]">
+              {tab.label}
+            </span>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <ImagePreview path={tab.path} ext={tab.ext} className="h-full min-h-[calc(100vh-12rem)]" />
+        </div>
+      </div>
+    );
+  }
+
   const {
     updateTabContent,
     saveTab,
@@ -333,6 +380,7 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
     mdViewModes,
     setMdViewMode,
     pushUndo,
+    openFileByPath,
   } = useExplorerStore();
   const monaco = useMonaco();
   /** Evita registrar el contenido en undo cuando el cambio viene de undo/redo. */
@@ -767,7 +815,11 @@ export function EditorPanel({ tab, isDark }: EditorPanelProps) {
               className={`min-h-0 min-w-0 overflow-auto bg-[var(--color-surface)] px-5 py-5 md:px-7 ${mode === "split" ? "border-l border-[var(--color-border)]" : ""}`}
               style={{ flex: previewFlex }}
             >
-              <MarkdownPreview content={tab.content} />
+              <MarkdownPreview
+                content={tab.content}
+                basePath={tab.path ? tab.path.replace(/[/\\][^/\\]+$/, "") : undefined}
+                onOpenFile={tab.path ? (path) => void openFileByPath(path) : undefined}
+              />
             </div>
           )}
         </div>

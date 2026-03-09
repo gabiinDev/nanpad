@@ -29,17 +29,18 @@ import {
   IconPreviewMode,
   IconClose,
 } from "@ui/icons/index.tsx";
-import { canOpenInCode, isPreviewableExt, isNonEditableExt } from "@ui/icons/fileIconByExt.tsx";
+import { canOpenInCode, isPreviewableExt, isNonEditableExt, isPdfPreviewExt, isImagePreviewExt } from "@ui/icons/fileIconByExt.tsx";
 import { ExplorerFileIcon } from "@features/explorer/utils/explorerFileIcons.tsx";
 import { validateFileNameOrPath, validateSingleName } from "@features/explorer/utils/validateFileName.ts";
 import { useToastStore } from "@/store/useToastStore.ts";
 
 function canPreview(ext?: string): boolean {
-  return isPreviewableExt(ext);
+  return isPreviewableExt(ext) || isPdfPreviewExt(ext) || isImagePreviewExt(ext);
 }
 
-/** Comprueba si el archivo se puede abrir/editar (no es zip, exe, audio, imagen, etc.). */
+/** Comprueba si el archivo se puede abrir (editar o previsualizar). PDF e imágenes solo preview. */
 function isFileOpenable(ext?: string): boolean {
+  if (isPdfPreviewExt(ext) || isImagePreviewExt(ext)) return true;
   if (isNonEditableExt(ext)) return false;
   const n = (ext ?? "").replace(/^\./, "").toLowerCase();
   return canOpenInCode(ext) || n === "";
@@ -625,6 +626,7 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
         const lang = detectLanguage(node.ext);
         const hasSyntax = lang !== "plaintext" || canOpenInCode(node.ext);
         const hasPreview = canPreview(node.ext);
+        const isPreviewOnly = isPdfPreviewExt(node.ext) || isImagePreviewExt(node.ext);
 
         items.push({
           label: "Abrir",
@@ -632,7 +634,7 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
           onClick: () => void openFile(node),
         });
 
-        if (hasSyntax) {
+        if (hasSyntax && !isPreviewOnly) {
           items.push({
             label: "Abrir en modo código",
             faIcon: <IconEditorMode size={13} />,
@@ -640,7 +642,7 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
           });
         }
 
-        if (hasPreview) {
+        if (hasPreview && !isPreviewOnly) {
           items.push({
             label: "Vista dividida",
             faIcon: <IconSplitMode size={13} />,
@@ -652,6 +654,8 @@ export function FileTree({ onOpenFolderDialog }: FileTreeProps) {
             onClick: () => openWithMode(openFile, node, "preview"),
             separator: true,
           });
+        } else if (hasPreview && isPreviewOnly) {
+          items[items.length - 1] = { ...items[items.length - 1], separator: true };
         } else {
           items[items.length - 1] = { ...items[items.length - 1], separator: true };
         }

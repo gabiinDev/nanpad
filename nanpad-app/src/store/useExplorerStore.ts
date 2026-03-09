@@ -8,7 +8,7 @@
 
 import { create } from "zustand";
 import type { FsNode, TempFileMeta } from "@/infrastructure/FsService.ts";
-import { isNonEditableExt, canOpenInCode } from "@/ui/icons/fileIconByExt.tsx";
+import { isNonEditableExt, canOpenInCode, isPdfPreviewExt, isImagePreviewExt } from "@/ui/icons/fileIconByExt.tsx";
 import {
   listDir,
   readFile,
@@ -377,8 +377,12 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
     if (session?.realTabIds.length) {
       for (const path of session.realTabIds.slice(0, MAX_PERSISTED_REAL_TABS)) {
         try {
-          const content = await readFile(path);
           const name = path.replace(/\\/g, "/").split("/").pop() ?? path;
+          const ext = getExt(name);
+          let content = "";
+          if (!isPdfPreviewExt(ext) && !isImagePreviewExt(ext)) {
+            content = await readFile(path);
+          }
           restoredTabs.push({
             id: path,
             label: name,
@@ -386,7 +390,7 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
             content,
             isTemp: false,
             isDirty: false,
-            ext: getExt(name),
+            ext,
             isPinned: true,
           });
         } catch {
@@ -525,9 +529,11 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
     // Si ya hay un preview sin fijar (tab temporal de vista previa), reutilizarlo
     const existingPreview = openTabs.find((t) => !t.isPinned && !t.isTemp);
     let content = "";
-    try {
-      content = await readFile(node.path);
-    } catch { content = ""; }
+    if (!isPdfPreviewExt(node.ext) && !isImagePreviewExt(node.ext)) {
+      try {
+        content = await readFile(node.path);
+      } catch { content = ""; }
+    }
 
     const tab: OpenTab = {
       id: node.path,
@@ -573,10 +579,12 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
       return;
     }
     let content = "";
-    try {
-      content = await readFile(node.path);
-    } catch {
-      content = "";
+    if (!isPdfPreviewExt(node.ext) && !isImagePreviewExt(node.ext)) {
+      try {
+        content = await readFile(node.path);
+      } catch {
+        content = "";
+      }
     }
     // Reemplazar el preview sin fijar si existe
     const existingPreview = get().openTabs.find((t) => !t.isPinned && !t.isTemp);
@@ -609,8 +617,8 @@ export const useExplorerStore = create<ExplorerStore>((set, get) => ({
     const name = path.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? path;
     const ext = getExt(name);
     const n = (ext ?? "").toLowerCase();
-    if (isNonEditableExt(ext)) return;
-    if (!canOpenInCode(ext) && n !== "") return;
+    if (isNonEditableExt(ext) && !isPdfPreviewExt(ext) && !isImagePreviewExt(ext)) return;
+    if (!canOpenInCode(ext) && !isPdfPreviewExt(ext) && !isImagePreviewExt(ext) && n !== "") return;
     const node: FsNode = { path, name, isDir: false, ext };
     await get().openFile(node);
   },

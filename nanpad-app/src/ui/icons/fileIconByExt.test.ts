@@ -6,6 +6,8 @@ import { describe, it, expect } from "vitest";
 import {
   isCodeExt,
   isPreviewableExt,
+  isPdfPreviewExt,
+  isImagePreviewExt,
   canOpenInCode,
   isNonEditableExt,
 } from "./fileIconByExt";
@@ -51,6 +53,35 @@ describe("canOpenInCode", () => {
   it("retorna false para pdf, zip, etc.", () => {
     expect(canOpenInCode("pdf")).toBe(false);
     expect(canOpenInCode("zip")).toBe(false);
+  });
+});
+
+describe("isPdfPreviewExt", () => {
+  it("retorna true para pdf", () => {
+    expect(isPdfPreviewExt("pdf")).toBe(true);
+    expect(isPdfPreviewExt(".PDF")).toBe(true);
+  });
+
+  it("retorna false para otros formatos", () => {
+    expect(isPdfPreviewExt("md")).toBe(false);
+    expect(isPdfPreviewExt("zip")).toBe(false);
+  });
+});
+
+describe("isImagePreviewExt", () => {
+  it("retorna true para png, jpg, jpeg, gif, webp, tiff, tif", () => {
+    expect(isImagePreviewExt("png")).toBe(true);
+    expect(isImagePreviewExt("jpg")).toBe(true);
+    expect(isImagePreviewExt("jpeg")).toBe(true);
+    expect(isImagePreviewExt("gif")).toBe(true);
+    expect(isImagePreviewExt("webp")).toBe(true);
+    expect(isImagePreviewExt("tiff")).toBe(true);
+    expect(isImagePreviewExt("tif")).toBe(true);
+  });
+
+  it("retorna false para otros formatos", () => {
+    expect(isImagePreviewExt("pdf")).toBe(false);
+    expect(isImagePreviewExt("md")).toBe(false);
   });
 });
 

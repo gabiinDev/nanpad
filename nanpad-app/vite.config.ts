@@ -22,6 +22,7 @@ export default defineConfig(async () => ({
       "@nanpad/core": path.resolve(__dirname, "../packages/core/src/index.ts"),
       "@shared": path.resolve(__dirname, "../packages/core/src/shared"),
       "@modules": path.resolve(__dirname, "../packages/core/src/modules"),
+      "@infra": path.resolve(__dirname, "../packages/core/src/infrastructure"),
     },
   },
 

@@ -1,10 +1,21 @@
 /**
  * Tests del Error Boundary.
+ * Silenciamos console.error para evitar ruido esperado (errores intencionales).
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ErrorBoundary } from "./ErrorBoundary";
+
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore();
+});
 
 /** Componente que lanza en render para simular error. */
 function Thrower({ message }: { message: string }): never {

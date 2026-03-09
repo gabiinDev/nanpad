@@ -22,6 +22,10 @@
       "allow": [{ "path": "$HOME/**" }, { "path": "$APPLOCALDATA/nanpad/**" }]
     },
     {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$HOME/**" }, { "path": "$APPLOCALDATA/nanpad/**" }]
+    },
+    {
       "identifier": "fs:allow-write-text-file",
       "allow": [{ "path": "$HOME/**" }, { "path": "$APPLOCALDATA/nanpad/**" }]
     },

@@ -23,7 +23,7 @@ type FileIconComponent = typeof IconFileText;
 
 const MARKDOWN_EXTS = new Set(["md", "mdx", "mdc"]);
 const IMAGE_EXTS = new Set([
-  "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp", "avif", "tiff",
+  "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp", "avif", "tiff", "tif",
 ]);
 const PDF_EXTS = new Set(["pdf"]);
 const WORD_EXTS = new Set(["doc", "docx", "odt"]);
@@ -107,6 +107,16 @@ export function isCodeExt(ext: string | undefined): boolean {
 /** Comprueba si la extensión es previsualizable (p. ej. markdown). */
 export function isPreviewableExt(ext: string | undefined): boolean {
   return MARKDOWN_EXTS.has(normExt(ext ?? ""));
+}
+
+/** Comprueba si la extensión permite preview de PDF (solo vista previa, sin editor). */
+export function isPdfPreviewExt(ext: string | undefined): boolean {
+  return PDF_EXTS.has(normExt(ext ?? ""));
+}
+
+/** Comprueba si la extensión permite preview de imagen (solo vista previa, sin editor). */
+export function isImagePreviewExt(ext: string | undefined): boolean {
+  return IMAGE_EXTS.has(normExt(ext ?? ""));
 }
 
 /** Comprueba si se puede abrir en editor (código o markdown). */

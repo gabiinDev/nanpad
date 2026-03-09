@@ -5,6 +5,7 @@
 
 import {
   readDir,
+  readFile as readFileBinary,
   readTextFile,
   writeTextFile,
   remove,
@@ -103,6 +104,15 @@ export async function listDir(dirPath: string): Promise<FsNode[]> {
  */
 export async function readFile(filePath: string): Promise<string> {
   return readTextFile(filePath);
+}
+
+/**
+ * Lee el contenido binario de un archivo (p. ej. PDF, imágenes).
+ * @param filePath - Ruta absoluta del archivo.
+ * @returns Uint8Array con los bytes del archivo.
+ */
+export async function readBinaryFile(filePath: string): Promise<Uint8Array> {
+  return readFileBinary(filePath);
 }
 
 /**
